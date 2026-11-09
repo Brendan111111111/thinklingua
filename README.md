@@ -31,6 +31,9 @@ Two mechanics keep the method honest:
 - **Three lesson tracks per course** — **Words** (picture multiple choice), **Speaking** (you say the word or sentence and the
   app scores the attempt against the native line) and **Reading** (Thai letters and Japanese hiragana, taught as sounds with real
   example words). Pick the track on the course map; progress is tracked separately for each.
+- **Tone contour scoring on Thai** — speaking drills record the attempt alongside speech recognition, extract the pitch of your
+  voice, and compare its shape with the pitch of the native voice. Transcript and melody are weighted 60/40, and the two lines are
+  drawn over each other so you can see the tone bend the wrong way.
 - **AI conversation partner** — a persona per language that speaks only the target language, keeps turns to two sentences, asks
   one question, and **recasts** mistakes instead of grading them. Reply audio uses the same native voice.
 - **Native voices, no setup** — every word is audible on a fresh clone through a keyless native-voice fallback; add an Azure key
@@ -83,6 +86,12 @@ Speaking drills use the microphone. Browsers refuse it to a page embedded inside
 preview panel, open it in its own tab first — the drill detects this and gives you the link instead of an opaque "allow media
 access" prompt. When permission is denied, unsupported or the device is missing, the drill names the exact problem. If the browser
 has no speech recogniser, it records your attempt so you can compare it with the native voice by ear rather than inventing a score.
+
+Thai speaking drills also grade tone. The app derives a 24-point pitch contour from your recording (`lib/pitch.ts`, YIN with
+parabolic interpolation) and from the native TTS line, normalises both to semitones around their own median — so a low voice and a
+high voice are compared by shape, not by absolute pitch — aligns them with DTW, and turns the distance into a 0–100 melody score.
+The final Thai score is 60% words and 40% melody, and the result card draws the native contour (jade) over yours (gold). If the
+recording is too quiet or too short to measure, the drill says so and falls back to the transcript score instead of guessing.
 
 ### 3. AI partner
 
@@ -158,7 +167,7 @@ runtime's `fetch` semantics; the handlers use `fetch`, `Blob` and `ReadableStrea
 ## Roadmap
 
 - Recorded human audio per phrase, layered over the neural default.
-- Per-syllable tone feedback on Thai, instead of character-level transcript comparison.
+- Per-syllable tone labels on Thai (the contour is scored as a whole today; the lexemes carry no tone metadata yet).
 - Account sync (the store is already isolated behind `lib/progress.ts`).
 - Kana stroke order and Thai handwriting practice inside the reading track.
 

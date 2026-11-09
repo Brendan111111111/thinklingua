@@ -6,7 +6,7 @@
  * `browser` and the client speaks with the best locale-matched local voice.
  */
 
-export type VoiceProvider = "azure" | "google" | "elevenlabs";
+export type VoiceProvider = "azure" | "google" | "elevenlabs" | "free";
 
 type LanguageVoice = { azure: string; google: string };
 
@@ -25,6 +25,9 @@ export function activeProvider(): VoiceProvider | null {
   if (env("AZURE_SPEECH_KEY") && env("AZURE_SPEECH_REGION")) return "azure";
   if (env("GOOGLE_TTS_API_KEY")) return "google";
   if (env("ELEVENLABS_API_KEY")) return "elevenlabs";
+  // Keyless native voices: real Thai / Japanese pronunciation from the first
+  // click, so a fresh clone is never silent while keys are being set up.
+  if (env("DISABLE_FREE_TTS") !== "1") return "free";
   return null;
 }
 
@@ -36,6 +39,8 @@ export function providerLabel(provider: VoiceProvider | null): string {
       return "Google Cloud neural";
     case "elevenlabs":
       return "ElevenLabs multilingual";
+    case "free":
+      return "Native voice · no key";
     default:
       return "Browser voice";
   }
@@ -139,6 +144,53 @@ async function elevenlabs(text: string, locale: string): Promise<Uint8Array> {
   return new Uint8Array(await response.arrayBuffer());
 }
 
+/**
+ * Keyless native voices.
+ *
+ * Google's public speech endpoint returns genuine Thai and Japanese
+ * pronunciation with no account, which is what makes a fresh clone audible on
+ * the very first click. The endpoint caps query length, so long lines are
+ * chunked and the MP3 frames concatenated. This is the last server option
+ * before the device voice.
+ */
+async function free(text: string, locale: string, rate: number): Promise<Uint8Array> {
+  const lang = locale.slice(0, 2);
+  const speed = Math.min(1, Math.max(0.24, rate));
+  const chunks: string[] = [];
+  for (let i = 0; i < text.length; i += 180) chunks.push(text.slice(i, i + 180));
+
+  const parts: Uint8Array[] = [];
+  for (const chunk of chunks) {
+    const url = new URL("https://translate.google.com/translate_tts");
+    url.searchParams.set("ie", "UTF-8");
+    url.searchParams.set("client", "tw-ob");
+    url.searchParams.set("tl", lang);
+    url.searchParams.set("ttsspeed", String(speed));
+    url.searchParams.set("q", chunk);
+
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+        Referer: "https://translate.google.com/",
+      },
+      cache: "no-store",
+    });
+    if (!response.ok) throw new Error(`free tts ${response.status}`);
+    parts.push(new Uint8Array(await response.arrayBuffer()));
+  }
+
+  const total = parts.reduce((sum, part) => sum + part.byteLength, 0);
+  if (total === 0) throw new Error("free tts empty");
+  const merged = new Uint8Array(total);
+  let offset = 0;
+  for (const part of parts) {
+    merged.set(part, offset);
+    offset += part.byteLength;
+  }
+  return merged;
+}
+
 export async function synthesize(
   text: string,
   locale: string,
@@ -156,7 +208,9 @@ export async function synthesize(
       ? await azure(text, locale, rate)
       : provider === "google"
         ? await google(text, locale, rate)
-        : await elevenlabs(text, locale);
+        : provider === "elevenlabs"
+          ? await elevenlabs(text, locale)
+          : await free(text, locale, rate);
 
   if (bytes.byteLength === 0) throw new Error("empty audio");
   return { bytes: remember(key, bytes), provider };

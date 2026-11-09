@@ -137,15 +137,16 @@ export function primeVoices(): Promise<SpeechVoice[]> {
   });
 }
 
-function speakBrowser(text: string, locale: string, rate: number): Promise<void> {
-  return new Promise((resolve) => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
-      resolve();
-      return;
-    }
-    const synth = window.speechSynthesis;
+async function speakBrowser(text: string, locale: string, rate: number): Promise<void> {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  const synth = window.speechSynthesis;
+  // On a cold page the voice list is still empty, so wait for it before
+  // choosing — otherwise Thai gets read by whatever the default happens to be.
+  await primeVoices();
+  const voice = pickVoice(locale);
+
+  await new Promise<void>((resolve) => {
     const utterance = new SpeechSynthesisUtterance(text);
-    const voice = pickVoice(locale);
     if (voice) utterance.voice = voice;
     utterance.lang = locale;
     utterance.rate = rate;
@@ -154,12 +155,16 @@ function speakBrowser(text: string, locale: string, rate: number): Promise<void>
     const finish = () => {
       if (settled) return;
       settled = true;
+      if (currentCancel === finish) currentCancel = null;
       resolve();
     };
     utterance.onend = finish;
     utterance.onerror = finish;
     currentCancel = finish;
-    synth.cancel();
+    // Cancelling an idle engine in Chrome can swallow the utterance that
+    // follows, so only interrupt when something is actually being spoken.
+    if (synth.speaking || synth.pending) synth.cancel();
+    if (synth.paused) synth.resume();
     synth.speak(utterance);
     window.setTimeout(finish, 1200 + text.length * 170);
   });
@@ -193,7 +198,7 @@ export async function speak(text: string, { locale, rate = 1 }: SpeakOptions): P
 }
 
 export type EngineInfo = {
-  engine: "azure" | "google" | "elevenlabs" | "browser";
+  engine: "azure" | "google" | "elevenlabs" | "free" | "browser";
   native: boolean;
   label: string;
 };

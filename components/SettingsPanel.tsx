@@ -61,9 +61,11 @@ export function SettingsPanel() {
           <div>
             <h2 className="font-display text-lg font-semibold">Voice engine</h2>
             <p className="mt-1 text-sm text-muted">
-              {engine?.native
-                ? "Native neural voices are active. Thai is voiced by a Thai speaker, Japanese by a Japanese speaker."
-                : "Running on the best voice installed in this device. Native-accent neural voices unlock with a voice key."}
+              {engine?.engine === "free"
+                ? "Native Thai and Japanese voices are active out of the box. Add an Azure key whenever you want the studio neural voices."
+                : engine?.native
+                  ? "Native neural voices are active. Thai is voiced by a Thai speaker, Japanese by a Japanese speaker."
+                  : "Running on the best voice installed in this device. Native-accent voices unlock with a voice key."}
             </p>
           </div>
           <Badge tone={engine?.native ? "jade" : "gold"}>{engine ? engine.label : "checking…"}</Badge>

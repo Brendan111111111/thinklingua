@@ -100,10 +100,11 @@ and falls back to the transcript score instead of guessing.
 ### Checking tone feedback without a microphone
 
 In development, open `/dev/tone` to run a WAV through the same browser pipeline as the speaking drill: decode, F0
-extraction, DTW against `/api/tts`, per-syllable scoring and the named worst syllable. **Run bundled fixture check** is
-one click: it loads `public/fixtures/th-raakhaa-flat.wav` (a deliberately flat 220 Hz take for ราคา) and asserts that the
-feedback names syllable 2 (คา). Upload a recording, or press **Score native line against itself** for the other zero-setup
-check (it should report 100% and every syllable holding). The route returns 404 in production builds.
+extraction, DTW against `/api/tts`, per-syllable scoring and the named worst syllable. **Run both fixture checks** is one
+click: it asserts that the bundled native line for ราคา names no syllable, then that
+`public/fixtures/th-raakhaa-flat.wav` (a deliberately flat 220 Hz take) names syllable 2 (คา). Upload a recording, or
+press **Score native line against itself** for the other zero-setup check (it should report 100% and every syllable
+holding). The route returns 404 in production builds.
 
 ### 3. AI partner
 
@@ -128,7 +129,7 @@ app/
   (app)/settings            voice engine, speech rate, romanisation, reset
   api/tts                   native-voice synthesis
   api/tutor                 streaming tutor with the monolingual system promptpublic/
-  fixtures/                 bundled WAV for the dev tone assertion
+  fixtures/                 bundled audio for the dev tone assertions
 components/                 shell, lesson engine, chat, dashboards
 lib/
   content/                  the four courses (lexemes, phrases, ear drills)

@@ -192,6 +192,10 @@ runtime's `fetch` semantics; the handlers use `fetch`, `Blob` and `ReadableStrea
 - Account sync (the store is already isolated behind `lib/progress.ts`).
 - Kana stroke order and Thai handwriting practice inside the reading track.
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the required CI checks, the pull-request workflow, and the commands to run them locally.
+
 ## Licence
 
 MIT.

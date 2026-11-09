@@ -6,6 +6,7 @@
  */
 
 import { contourFromTrack, extractPitch, melodyScore, type MelodyAnalysis } from "./pitch";
+import { splitThaiSyllables, syllableTones, type SyllableTone } from "./thaiTones";
 
 const referenceCache = new Map<string, number[] | null>();
 
@@ -72,8 +73,14 @@ export async function referenceContour(text: string, locale: string): Promise<nu
   }
 }
 
-export async function analyseAttempt(blob: Blob, text: string, locale: string): Promise<MelodyAnalysis> {
+export type SpeakAnalysis = MelodyAnalysis & {
+  /** One entry per spoken syllable; empty when the contour could not be measured. */
+  syllables: SyllableTone[];
+};
+
+export async function analyseAttempt(blob: Blob, text: string, locale: string): Promise<SpeakAnalysis> {
   const [buffer, reference] = await Promise.all([decode(blob), referenceContour(text, locale)]);
   const user = buffer ? contourFromBuffer(buffer) : null;
-  return { melody: melodyScore(user, reference), user, reference };
+  const syllables = user && reference ? syllableTones(reference, user, splitThaiSyllables(text)) : [];
+  return { melody: melodyScore(user, reference), user, reference, syllables };
 }

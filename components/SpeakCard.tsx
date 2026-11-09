@@ -5,6 +5,7 @@ import { scorePronunciation, verdictCopy, SPEECH_PASS, type SpeechScore, type Sp
 import { isEmbedded, requestMicrophone, startRecording, type MicCheck, type RecordedClip, type Recording } from "@/lib/mic";
 import { canRecognise, listenOnce, stopSpeaking } from "@/lib/speech";
 import { analyseAttempt, pitchSupported, referenceContour } from "@/lib/pitchClient";
+import { toneFeedback, type SyllableTone } from "@/lib/thaiTones";
 import { Icon, cn } from "./ui";
 import { SpeakButton } from "./SpeakButton";
 
@@ -36,6 +37,7 @@ export function SpeakCard({ text, latin, gloss, glyph, tone, locale, rate, locke
   const [melody, setMelody] = useState<number | null>(null);
   const [overall, setOverall] = useState<number | null>(null);
   const [contours, setContours] = useState<Contours | null>(null);
+  const [tones, setTones] = useState<SyllableTone[]>([]);
   const [problem, setProblem] = useState<MicCheck | null>(null);
   const [embedded, setEmbedded] = useState(false);
   const [href, setHref] = useState("/");
@@ -105,12 +107,14 @@ export function SpeakCard({ text, latin, gloss, glyph, tone, locale, rate, locke
     const clip = await takeClip();
     let melodyValue: number | null = null;
     let pair: Contours | null = null;
+    let syllableResult: SyllableTone[] = [];
 
     if (clip && pitched) {
       keepClip(clip.url);
       const analysis = await analyseAttempt(clip.blob, text, locale);
       melodyValue = analysis.melody;
       pair = { user: analysis.user, reference: analysis.reference };
+      syllableResult = analysis.syllables;
     }
 
     const combined =
@@ -118,6 +122,7 @@ export function SpeakCard({ text, latin, gloss, glyph, tone, locale, rate, locke
 
     setMelody(melodyValue);
     setContours(pair);
+    setTones(syllableResult);
     setOverall(combined);
     setPhase("scored");
     onGraded(combined >= SPEECH_PASS, combined);
@@ -133,6 +138,7 @@ export function SpeakCard({ text, latin, gloss, glyph, tone, locale, rate, locke
     setMelody(null);
     setOverall(null);
     setContours(null);
+    setTones([]);
     clearClip();
     setPhase("checking");
 
@@ -219,15 +225,18 @@ export function SpeakCard({ text, latin, gloss, glyph, tone, locale, rate, locke
 
     let value: number | null = null;
     let pair: Contours | null = null;
+    let syllableResult: SyllableTone[] = [];
     if (pitched) {
       const analysis = await analyseAttempt(clip.blob, text, locale);
       value = analysis.melody;
       pair = { user: analysis.user, reference: analysis.reference };
+      syllableResult = analysis.syllables;
     }
 
     setMelody(value);
     setOverall(value);
     setContours(pair);
+    setTones(syllableResult);
     setPhase("recorded");
   }
 
@@ -241,6 +250,7 @@ export function SpeakCard({ text, latin, gloss, glyph, tone, locale, rate, locke
   const done = phase === "scored";
   const shownScore = overall ?? words?.score ?? null;
   const passed = shownScore !== null && shownScore >= SPEECH_PASS;
+  const feedback = toneFeedback(tones);
 
   return (
     <div className="anim-slide">
@@ -340,6 +350,12 @@ export function SpeakCard({ text, latin, gloss, glyph, tone, locale, rate, locke
                 This browser has no speech recogniser, so compare your take with the native voice by ear. No score is invented for you.
               </p>
             )}
+            {tones.length > 1 && feedback.headline && (
+              <p className="mt-1 text-[11px] leading-relaxed text-cream/80">
+                {feedback.headline}
+                {feedback.detail ? ` ${feedback.detail}` : ""}
+              </p>
+            )}
             <div className="mt-3 flex flex-wrap justify-center gap-2">
               <button type="button" onClick={begin} className="btn btn-ghost px-5 py-2.5 text-sm">
                 Try again
@@ -410,9 +426,37 @@ export function SpeakCard({ text, latin, gloss, glyph, tone, locale, rate, locke
                 </span>
               </div>
               {contours?.user && contours?.reference && <MelodyGraph user={contours.user} reference={contours.reference} />}
+              {tones.length > 1 && (
+                <div className="mt-2.5 flex flex-wrap gap-1.5">
+                  {tones.map((tone) => (
+                    <span
+                      key={`${tone.ordinal}:${tone.text}`}
+                      title={`Syllable ${tone.ordinal} · ${tone.score}% tone match`}
+                      className={cn(
+                        "rounded-full border px-2 py-0.5 text-[11px]",
+                        tone.score >= 70
+                          ? "border-jade/35 bg-jade/10 text-jade"
+                          : tone.score >= 45
+                            ? "border-gold/35 bg-gold/10 text-gold"
+                            : "border-sakura/40 bg-sakura/10 text-sakura",
+                      )}
+                    >
+                      {tone.label}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {feedback.headline && (
+                <p className="mt-2 text-[11px] leading-relaxed text-cream/85">
+                  {feedback.headline}
+                  {feedback.detail ? ` ${feedback.detail}` : ""}
+                </p>
+              )}
               <p className="mt-1 text-[11px] leading-relaxed text-muted">
                 {melody !== null
-                  ? "Your pitch line (gold) against the native line (green). Shape matters, not how high or low your voice sits."
+                  ? tones.length > 1
+                    ? "Gold is your line, green is the native voice. The chips follow the syllables in order."
+                    : "Your pitch line (gold) against the native line (green). Shape matters, not how high or low your voice sits."
                   : "Not enough voice to measure a contour. Hold the vowel a little longer, a touch louder, and try again."}
               </p>
             </div>

@@ -480,7 +480,7 @@ export function SpeakCard({ text, latin, gloss, glyph, tone, locale, rate, locke
   );
 }
 
-function MelodyGraph({ user, reference }: { user: number[]; reference: number[] }) {
+export function MelodyGraph({ user, reference }: { user: number[]; reference: number[] }) {
   const width = 260;
   const height = 64;
   const pad = 6;

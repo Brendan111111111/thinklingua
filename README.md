@@ -97,6 +97,13 @@ score. When one syllable is clearly further off than the rest, the result names 
 whether the native line rises, falls or holds level there. If the recording is too quiet or too short to measure, the drill says so
 and falls back to the transcript score instead of guessing.
 
+### Checking tone feedback without a microphone
+
+In development, open `/dev/tone` to run a WAV through the same browser pipeline as the speaking drill: decode, F0
+extraction, DTW against `/api/tts`, per-syllable scoring and the named worst syllable. Upload a recording, or press
+**Score native line against itself** for a zero-setup check (it should report 100% and every syllable holding). The route
+returns 404 in production builds.
+
 ### 3. AI partner
 
 `OPENAI_API_KEY` plus `AI_BASE_URL` (any OpenAI-compatible chat-completions endpoint; the Freebuff API default is
@@ -112,6 +119,7 @@ Without a key, the tutor screen shows a setup card; the rest of the app keeps wo
 ```
 app/
   page.tsx                  landing page + live voice demo
+  dev/tone                  development-only WAV harness for tone feedback
   (app)/learn               course picker, unit map, lesson player
   (app)/review              spaced-repetition session
   (app)/tutor               streaming AI conversation partner

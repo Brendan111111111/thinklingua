@@ -106,6 +106,10 @@ click: it asserts that the bundled native line for ราคา names no syllabl
 press **Score native line against itself** for the other zero-setup check (it should report 100% and every syllable
 holding). The route returns 404 in production builds.
 
+`npm run test:tone` asserts both fixture outcomes headlessly in Chromium. CI stubs `/api/tts` with the committed native
+line, so the reference never depends on the network, while decode, F0, DTW, syllable splitting and the feedback copy all
+still run. The workflow lives in `.github/workflows/tone-fixtures.yml`.
+
 ### 3. AI partner
 
 `OPENAI_API_KEY` plus `AI_BASE_URL` (any OpenAI-compatible chat-completions endpoint; the Freebuff API default is

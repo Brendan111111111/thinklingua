@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MelodyGraph } from "@/components/SpeakCard";
 import { cn } from "@/components/ui";
 import { analyseAttempt, type SpeakAnalysis } from "@/lib/pitchClient";
@@ -55,6 +55,11 @@ export function ToneHarness() {
   const [result, setResult] = useState<SpeakAnalysis | null>(null);
   const [source, setSource] = useState("");
   const [checks, setChecks] = useState<FixtureCheck[]>([]);
+  const [hydrated, setHydrated] = useState(false);
+
+  // The Playwright check waits for this before clicking: the button is server
+  // rendered, so a click can otherwise land before React attaches its handler.
+  useEffect(() => setHydrated(true), []);
 
   const phrase = text.trim();
   const pieces = phrase ? splitThaiSyllables(phrase) : [];
@@ -186,7 +191,7 @@ export function ToneHarness() {
   const allChecksPassed = checksComplete && checks.every((entry) => entry.ok);
 
   return (
-    <div className="mx-auto w-full max-w-3xl">
+    <div className="mx-auto w-full max-w-3xl" data-tone-hydrated={hydrated ? "true" : "false"}>
       <a href="/learn" className="text-xs text-muted underline">
         Back to learn
       </a>

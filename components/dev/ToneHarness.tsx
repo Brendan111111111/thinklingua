@@ -8,6 +8,17 @@ import { splitThaiSyllables, toneFeedback } from "@/lib/thaiTones";
 
 const DEFAULT_TEXT = "ราคา";
 
+/** Deliberately flat tone; the falling second syllable of ราคา should be named. */
+const FIXTURE = {
+  url: "/fixtures/th-raakhaa-flat.wav",
+  name: "th-raakhaa-flat.wav",
+  text: "ราคา",
+  ordinal: 2,
+  label: "คา",
+};
+
+type FixtureCheck = { ok: boolean; message: string };
+
 function chipTone(score: number): string {
   if (score >= 70) return "border-jade/35 bg-jade/10 text-jade";
   if (score >= 45) return "border-gold/35 bg-gold/10 text-gold";
@@ -22,24 +33,26 @@ function chipTone(score: number): string {
 export function ToneHarness() {
   const [text, setText] = useState(DEFAULT_TEXT);
   const [file, setFile] = useState<File | null>(null);
-  const [busy, setBusy] = useState<"file" | "native" | null>(null);
+  const [busy, setBusy] = useState<"file" | "native" | "fixture" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<SpeakAnalysis | null>(null);
   const [source, setSource] = useState("");
+  const [check, setCheck] = useState<FixtureCheck | null>(null);
 
   const phrase = text.trim();
   const pieces = phrase ? splitThaiSyllables(phrase) : [];
   const feedback = result ? toneFeedback(result.syllables) : null;
 
-  async function analyse(blob: Blob) {
-    const analysis = await analyseAttempt(blob, phrase, "th-TH");
+  async function analyse(blob: Blob, line: string): Promise<SpeakAnalysis | null> {
+    const analysis = await analyseAttempt(blob, line, "th-TH");
     if (analysis.melody === null || !analysis.user || !analysis.reference) {
       setError(
         "The clip decoded, but no usable contour came out. Use at least half a second of clear voice, and make sure /api/tts can synthesize the line.",
       );
-      return;
+      return null;
     }
     setResult(analysis);
+    return analysis;
   }
 
   async function scoreFile() {
@@ -54,9 +67,10 @@ export function ToneHarness() {
     setBusy("file");
     setError(null);
     setResult(null);
+    setCheck(null);
     setSource(file.name);
     try {
-      await analyse(file);
+      await analyse(file, phrase);
     } catch (issue) {
       setError(issue instanceof Error ? issue.message : "Could not analyse that file.");
     } finally {
@@ -72,6 +86,7 @@ export function ToneHarness() {
     setBusy("native");
     setError(null);
     setResult(null);
+    setCheck(null);
     setSource("native TTS line");
     try {
       const response = await fetch("/api/tts", {
@@ -80,9 +95,40 @@ export function ToneHarness() {
         body: JSON.stringify({ text: phrase, lang: "th-TH", rate: 1 }),
       });
       if (!response.ok) throw new Error(`The voice API answered ${response.status}.`);
-      await analyse(await response.blob());
+      await analyse(await response.blob(), phrase);
     } catch (issue) {
       setError(issue instanceof Error ? issue.message : "Could not fetch the native line.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function runFixture() {
+    setBusy("fixture");
+    setError(null);
+    setResult(null);
+    setCheck(null);
+    setSource(FIXTURE.name);
+    setText(FIXTURE.text);
+    try {
+      const response = await fetch(FIXTURE.url, { cache: "no-store" });
+      if (!response.ok) throw new Error(`Fixture answered ${response.status}.`);
+      const blob = await response.blob();
+      setFile(new File([blob], FIXTURE.name, { type: "audio/wav" }));
+      const analysis = await analyse(blob, FIXTURE.text);
+      if (!analysis) return;
+      const worst = toneFeedback(analysis.syllables).worst;
+      const named = worst?.ordinal === FIXTURE.ordinal && worst.label === FIXTURE.label;
+      setCheck({
+        ok: named,
+        message: named
+          ? `Feedback named Syllable ${FIXTURE.ordinal} · ${FIXTURE.label}, as expected.`
+          : `Expected Syllable ${FIXTURE.ordinal} · ${FIXTURE.label}, got ${
+              worst ? `Syllable ${worst.ordinal} · ${worst.label}` : "no named syllable"
+            }.`,
+      });
+    } catch (issue) {
+      setError(issue instanceof Error ? issue.message : "Could not run the bundled fixture.");
     } finally {
       setBusy(null);
     }
@@ -114,6 +160,7 @@ export function ToneHarness() {
             setText(event.target.value);
             setResult(null);
             setError(null);
+            setCheck(null);
           }}
           className="script-th mt-1 w-full rounded-xl border border-line/70 bg-ink/40 px-3 py-2 text-xl text-cream outline-none focus:border-jade/60"
           placeholder="ราคา"
@@ -135,6 +182,7 @@ export function ToneHarness() {
             setFile(event.target.files?.[0] ?? null);
             setResult(null);
             setError(null);
+            setCheck(null);
           }}
           className="mt-1 block w-full cursor-pointer rounded-xl border border-line/70 bg-ink/40 px-3 py-2 text-xs text-muted file:mr-3 file:rounded-lg file:border-0 file:bg-panel file:px-3 file:py-1.5 file:text-xs file:text-cream"
         />
@@ -143,19 +191,41 @@ export function ToneHarness() {
         </p>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          <button type="button" onClick={scoreFile} disabled={!file || disabled} className="btn btn-primary px-4 py-2 text-sm">
+          <button type="button" onClick={runFixture} disabled={disabled} className="btn btn-primary px-4 py-2 text-sm">
+            {busy === "fixture" ? "Running fixture…" : "Run bundled fixture check"}
+          </button>
+          <button type="button" onClick={scoreFile} disabled={!file || disabled} className="btn btn-ghost px-4 py-2 text-sm">
             {busy === "file" ? "Analysing…" : "Analyse WAV"}
           </button>
           <button type="button" onClick={scoreNative} disabled={!phrase || disabled} className="btn btn-ghost px-4 py-2 text-sm">
             {busy === "native" ? "Synthesizing…" : "Score native line against itself"}
           </button>
         </div>
+        <p className="mt-2 text-[11px] text-muted">
+          Fixture: a flat 220 Hz WAV for <span className="script-th">ราคา</span>; expects syllable 2 (
+          <span className="script-th">คา</span>) to be the one named.
+        </p>
       </div>
 
       {error && (
         <div className="mt-4 rounded-2xl border border-sakura/35 bg-sakura/10 p-4 text-sm text-cream/90">
           <p className="font-semibold text-sakura">Could not score that clip</p>
           <p className="mt-1 text-xs leading-relaxed text-cream/80">{error}</p>
+        </div>
+      )}
+
+      {check && (
+        <div
+          role="status"
+          className={cn(
+            "mt-4 rounded-2xl border p-4",
+            check.ok ? "border-jade/35 bg-jade/10" : "border-sakura/35 bg-sakura/10",
+          )}
+        >
+          <p className={cn("text-sm font-semibold", check.ok ? "text-jade" : "text-sakura")}>
+            {check.ok ? "Fixture check passed" : "Fixture check failed"}
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-cream/80">{check.message}</p>
         </div>
       )}
 

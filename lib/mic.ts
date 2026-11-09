@@ -134,8 +134,10 @@ export async function requestMicrophone(): Promise<MicCheck> {
   }
 }
 
+export type RecordedClip = { blob: Blob; url: string };
+
 export type Recording = {
-  stop: () => Promise<string | null>;
+  stop: () => Promise<RecordedClip | null>;
   cancel: () => void;
 };
 
@@ -159,7 +161,7 @@ export async function startRecording(): Promise<Recording | null> {
 
   return {
     stop: () =>
-      new Promise<string | null>((resolve) => {
+      new Promise<RecordedClip | null>((resolve) => {
         if (recorder.state === "inactive") {
           release();
           resolve(null);
@@ -168,7 +170,7 @@ export async function startRecording(): Promise<Recording | null> {
         recorder.onstop = () => {
           release();
           const blob = new Blob(chunks, { type: chunks[0]?.type || "audio/webm" });
-          resolve(blob.size > 0 ? URL.createObjectURL(blob) : null);
+          resolve(blob.size > 0 ? { blob, url: URL.createObjectURL(blob) } : null);
         };
         recorder.stop();
       }),

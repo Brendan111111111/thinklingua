@@ -146,34 +146,74 @@ export function contourFromTrack(track: PitchTrack): number[] | null {
   return resample(semitones, CONTOUR_POINTS).map((value) => Math.max(-12, Math.min(12, value)));
 }
 
+export type ContourAlignment = {
+  /** Mean absolute semitone gap along the warping path. */
+  distance: number;
+  /** Monotonic [referenceIndex, userIndex] pairs, earliest first. */
+  pairs: Array<[number, number]>;
+};
+
 /**
  * Dynamic time warping over two pitch contours. Timing differences (a learner
  * speaking slower than the model) should not count as wrong notes, but a
- * different shape should.
+ * different shape should. The path is returned so callers can score slices of
+ * the line without re-aligning them.
  */
-export function contourDistance(a: number[], b: number[]): number {
+export function alignContours(a: number[], b: number[]): ContourAlignment | null {
   const n = a.length;
   const m = b.length;
-  if (!n || !m) return Infinity;
+  if (!n || !m) return null;
 
   const band = Math.max(4, Math.ceil(Math.max(n, m) * 0.35));
   const INF = 1e9;
-  let previous = new Float64Array(m + 1).fill(INF);
-  let current = new Float64Array(m + 1).fill(INF);
-  previous[0] = 0;
+  const cost: Float64Array[] = Array.from({ length: n + 1 }, () => new Float64Array(m + 1).fill(INF));
+  cost[0]![0] = 0;
 
   for (let i = 1; i <= n; i += 1) {
-    current.fill(INF);
     const from = Math.max(1, i - band);
     const to = Math.min(m, i + band);
     for (let j = from; j <= to; j += 1) {
-      const cost = Math.abs(a[i - 1] - b[j - 1]);
-      current[j] = cost + Math.min(previous[j], current[j - 1], previous[j - 1]);
+      const best = Math.min(cost[i - 1]![j]!, cost[i]![j - 1]!, cost[i - 1]![j - 1]!);
+      if (best >= INF) continue;
+      cost[i]![j] = Math.abs(a[i - 1]! - b[j - 1]!) + best;
     }
-    [previous, current] = [current, previous];
   }
 
-  return previous[m] / Math.max(n, m);
+  if (cost[n]![m]! >= INF) return null;
+
+  const pairs: Array<[number, number]> = [];
+  let i = n;
+  let j = m;
+  while (i > 0 && j > 0) {
+    pairs.push([i - 1, j - 1]);
+    const diagonal = cost[i - 1]![j - 1]!;
+    const up = cost[i - 1]![j]!;
+    const left = cost[i]![j - 1]!;
+    if (diagonal <= up && diagonal <= left) {
+      i -= 1;
+      j -= 1;
+    } else if (up <= left) {
+      i -= 1;
+    } else {
+      j -= 1;
+    }
+  }
+  while (i > 0) {
+    pairs.push([i - 1, 0]);
+    i -= 1;
+  }
+  while (j > 0) {
+    pairs.push([0, j - 1]);
+    j -= 1;
+  }
+  pairs.reverse();
+
+  return { distance: cost[n]![m]! / Math.max(n, m), pairs };
+}
+
+export function contourDistance(a: number[], b: number[]): number {
+  const alignment = alignContours(a, b);
+  return alignment ? alignment.distance : Infinity;
 }
 
 export type MelodyAnalysis = {

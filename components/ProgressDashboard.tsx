@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { allLessons, courses, getCourse, scriptClass } from "@/lib/content";
+import { allCourseLessonIds, courses, getCourse, scriptClass } from "@/lib/content";
 import {
   ACHIEVEMENTS,
   HEART_MAX,
@@ -167,9 +167,9 @@ export function ProgressDashboard() {
         <h2 className="font-display text-lg font-semibold">Languages</h2>
         <div className="mt-4 space-y-3">
           {courses.map((option) => {
-            const lessons = allLessons(option);
-            const done = lessons.filter(({ lesson }) => progress.completed[lesson.id]).length;
-            const percent = lessons.length === 0 ? 0 : done / lessons.length;
+            const ids = allCourseLessonIds(option);
+            const done = ids.filter((id) => progress.completed[id]).length;
+            const percent = ids.length === 0 ? 0 : done / ids.length;
             return (
               <Link key={option.id} href={`/learn/${option.id}`} className="block rounded-xl p-2 transition hover:bg-panel/50">
                 <div className="flex items-center justify-between text-sm">
@@ -179,7 +179,7 @@ export function ProgressDashboard() {
                     {option.primary && <Badge tone="jade">primary</Badge>}
                   </span>
                   <span className="text-xs text-muted">
-                    {done}/{lessons.length}
+                    {done}/{ids.length}
                   </span>
                 </div>
                 <ProgressBar value={percent} className="mt-1.5 h-1.5" tone={option.id === "ja" ? "sakura" : option.id === "th" ? "gold" : "violet"} />

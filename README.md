@@ -28,8 +28,9 @@ Two mechanics keep the method honest:
 
 - **Gamified progression** — XP, levels, target-language rank names, daily streak, focus hearts that regenerate over time, daily
   quests, 12 achievements, unit checkpoints, and a 28-day activity map.
-- **Spaced repetition** — every lexeme you answer is scheduled (Leitner + ease factor) and returns in `/review` right before it
-  would be forgotten.
+- **Three lesson tracks per course** — **Words** (picture multiple choice), **Speaking** (you say the word or sentence and the
+  app scores the attempt against the native line) and **Reading** (Thai letters and Japanese hiragana, taught as sounds with real
+  example words). Pick the track on the course map; progress is tracked separately for each.
 - **AI conversation partner** — a persona per language that speaks only the target language, keeps turns to two sentences, asks
   one question, and **recasts** mistakes instead of grading them. Reply audio uses the same native voice.
 - **Native voices, no setup** — every word is audible on a fresh clone through a keyless native-voice fallback; add an Azure key
@@ -76,7 +77,14 @@ Providers are tried in the order Azure → Google → ElevenLabs. `GET /api/tts/
 in the sidebar and on the settings page. With none configured, audio comes from `speechSynthesis` with a locale match and a
 preference for Premium/Enhanced/Neural/Siri/Google voices — much better than the default, still not a native actor.
 
-### 2. AI partner
+### 2. Microphone
+
+Speaking drills use the microphone. Browsers refuse it to a page embedded inside another page, so if the app is running inside a
+preview panel, open it in its own tab first — the drill detects this and gives you the link instead of an opaque "allow media
+access" prompt. When permission is denied, unsupported or the device is missing, the drill names the exact problem. If the browser
+has no speech recogniser, it records your attempt so you can compare it with the native voice by ear rather than inventing a score.
+
+### 3. AI partner
 
 `OPENAI_API_KEY` plus `AI_BASE_URL` (any OpenAI-compatible chat-completions endpoint; the Freebuff API default is
 `https://freebuff.com/api/v1/paid`). `TUTOR_MODEL` defaults to `gpt-4o-mini`.
@@ -101,9 +109,12 @@ app/
 components/                 shell, lesson engine, chat, dashboards
 lib/
   content/                  the four courses (lexemes, phrases, ear drills)
-  exercises.ts              deterministic exercise generation
+  content/reading.ts        Thai letters, hiragana and phonics lessons
+  exercises.ts              deterministic exercise generation, all three tracks
   progress.ts               store, SRS, streaks, hearts, quests, achievements
   speech.ts                 playback, browser fallback, speech recognition
+  speechScore.ts            pronunciation scoring and verdict copy
+  mic.ts                    microphone permission, problems, recording fallback
   tts.ts                    server voice providers
   tutor.ts                  system prompt and starters
 ```
@@ -147,9 +158,9 @@ runtime's `fetch` semantics; the handlers use `fetch`, `Blob` and `ReadableStrea
 ## Roadmap
 
 - Recorded human audio per phrase, layered over the neural default.
-- Speech scoring on the shadowing drill (currently loose transcript matching plus self-report).
+- Per-syllable tone feedback on Thai, instead of character-level transcript comparison.
 - Account sync (the store is already isolated behind `lib/progress.ts`).
-- Writing systems module: Thai consonant classes, kana stroke order.
+- Kana stroke order and Thai handwriting practice inside the reading track.
 
 ## Licence
 

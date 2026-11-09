@@ -45,6 +45,28 @@ export type EarDrill = {
   target: "a" | "b";
 };
 
+/** A lesson family the learner can pick from the course map. */
+export type Track = "words" | "speak" | "read";
+
+/** One letter (or letter group) and the sound it makes. */
+export type ReadingSymbol = {
+  glyph: string;
+  /** Romanised name of the sound, shown as the answer label. */
+  sound: string;
+  /** What the voice should say for the letter on its own. */
+  pronounce: string;
+  example?: { text: string; latin: string; gloss: string };
+};
+
+/** A reading lesson: the letters, their sounds, and a word that uses them. */
+export type ReadingLesson = {
+  id: string;
+  title: string;
+  latin: string;
+  intro: string;
+  symbols: ReadingSymbol[];
+};
+
 export type LessonKind = "lesson" | "checkpoint";
 
 export type Lesson = {
@@ -86,4 +108,6 @@ export type Course = {
   lexemes: Record<string, Lexeme>;
   phrases: Record<string, Phrase>;
   units: Unit[];
+  /** Script course, taught separately from the picture vocabulary. */
+  reading: ReadingLesson[];
 };

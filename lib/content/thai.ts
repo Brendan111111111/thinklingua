@@ -1,4 +1,5 @@
 import type { Course, Lexeme, Phrase } from "./types";
+import { thaiReading } from "./reading";
 
 const L = (
   id: string,
@@ -564,4 +565,5 @@ export const thai: Course = {
       ],
     },
   ],
+  reading: thaiReading,
 };

@@ -2,9 +2,21 @@ import { thai } from "./thai";
 import { japanese } from "./japanese";
 import { spanish } from "./spanish";
 import { french } from "./french";
-import type { Course, LangId, Lesson, Unit } from "./types";
+import type { Course, LangId, Lesson, ReadingLesson, Track, Unit } from "./types";
 
-export type { Course, LangId, Lesson, LessonKind, Unit, Lexeme, Phrase, EarDrill } from "./types";
+export type {
+  Course,
+  LangId,
+  Lesson,
+  LessonKind,
+  Unit,
+  Lexeme,
+  Phrase,
+  EarDrill,
+  Track,
+  ReadingLesson,
+  ReadingSymbol,
+} from "./types";
 
 export const courses: Course[] = [thai, japanese, spanish, french];
 
@@ -26,6 +38,59 @@ export function findLesson(course: Course, lessonId: string): { lesson: Lesson; 
 
 export function courseLessonCount(course: Course): number {
   return course.units.reduce((total, unit) => total + unit.lessons.length, 0);
+}
+
+/** Speaking lessons are generated: one per unit, drawn from its words. */
+export function speakingLessonId(unit: Unit): string {
+  return `speak.${unit.id}`;
+}
+
+export function findSpeakingUnit(course: Course, lessonId: string): Unit | undefined {
+  if (!lessonId.startsWith("speak.")) return undefined;
+  return course.units.find((unit) => speakingLessonId(unit) === lessonId);
+}
+
+export function findReadingLesson(course: Course, lessonId: string): ReadingLesson | undefined {
+  return course.reading.find((lesson) => lesson.id === lessonId);
+}
+
+/** Every lesson id in a track, in the order the course map shows them. */
+export function trackLessonIds(course: Course, track: Track): string[] {
+  if (track === "words") return allLessons(course).map(({ lesson }) => lesson.id);
+  if (track === "speak") return course.units.map(speakingLessonId);
+  return course.reading.map((lesson) => lesson.id);
+}
+
+export function trackLessonCount(course: Course, track: Track): number {
+  return trackLessonIds(course, track).length;
+}
+
+export function totalCourseLessons(course: Course): number {
+  return trackLessonIds(course, "words").length + trackLessonIds(course, "speak").length + trackLessonIds(course, "read").length;
+}
+
+export function allCourseLessonIds(course: Course): string[] {
+  return [...trackLessonIds(course, "words"), ...trackLessonIds(course, "speak"), ...trackLessonIds(course, "read")];
+}
+
+/** Title/intro for any lesson id, used by the map and the next-up card. */
+export function lessonSummary(
+  course: Course,
+  lessonId: string,
+): { id: string; title: string; latin: string; intro: string; track: Track } | undefined {
+  const word = findLesson(course, lessonId);
+  if (word) {
+    return { id: lessonId, title: word.lesson.title, latin: word.lesson.latin, intro: word.lesson.intro, track: "words" };
+  }
+  const unit = findSpeakingUnit(course, lessonId);
+  if (unit) {
+    return { id: lessonId, title: unit.title, latin: `${unit.latin} · speaking`, intro: `${unit.latin} — say what you know out loud.`, track: "speak" };
+  }
+  const reading = findReadingLesson(course, lessonId);
+  if (reading) {
+    return { id: lessonId, title: reading.title, latin: reading.latin, intro: reading.intro, track: "read" };
+  }
+  return undefined;
 }
 
 export function lessonLexemes(course: Course, lesson: Lesson): string[] {

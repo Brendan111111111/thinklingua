@@ -1,5 +1,8 @@
 # ThinkLingua
 
+[![Build and typecheck](https://github.com/Brendan111111111/thinklingua/actions/workflows/build-and-typecheck.yml/badge.svg?branch=main)](https://github.com/Brendan111111111/thinklingua/actions/workflows/build-and-typecheck.yml)
+[![Tone fixture checks](https://github.com/Brendan111111111/thinklingua/actions/workflows/tone-fixtures.yml/badge.svg?branch=main)](https://github.com/Brendan111111111/thinklingua/actions/workflows/tone-fixtures.yml)
+
 **Learn Thai and Japanese by thinking in them — not by translating through English.**
 
 ThinkLingua is a language-learning app built on one rule: meaning never passes through your native language. Words arrive as a

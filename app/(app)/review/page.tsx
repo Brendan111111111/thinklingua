@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { LessonRunner } from "@/components/LessonRunner";
-import { allLessons, courses, getCourse, scriptClass } from "@/lib/content";
+import { allCourseLessonIds, courses, getCourse, scriptClass } from "@/lib/content";
 import { dueLexemes, useProgress } from "@/lib/progress";
 import { Icon, cn } from "@/components/ui";
 
@@ -14,8 +14,7 @@ export default function ReviewPage() {
     return <div className="card h-64 animate-pulse bg-panel/40" />;
   }
 
-  const lessons = allLessons(course);
-  const started = lessons.some(({ lesson }) => progress.completed[lesson.id]);
+  const started = allCourseLessonIds(course).some((id) => progress.completed[id]);
 
   if (!started) {
     return (

@@ -222,7 +222,7 @@ type Recognizer = {
   start: () => void;
   stop: () => void;
   onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
-  onerror: (() => void) | null;
+  onerror: ((event: { error?: string }) => void) | null;
   onend: (() => void) | null;
 };
 
@@ -236,6 +236,7 @@ export function listenOnce(
   locale: string,
   onResult: (transcript: string) => void,
   onDone: () => void,
+  onError?: (code: string) => void,
 ): (() => void) | null {
   if (typeof window === "undefined") return null;
   const w = window as unknown as { SpeechRecognition?: new () => Recognizer; webkitSpeechRecognition?: new () => Recognizer };
@@ -259,7 +260,10 @@ export function listenOnce(
     const transcript = event.results?.[0]?.[0]?.transcript ?? "";
     onResult(transcript);
   };
-  recognizer.onerror = done;
+  recognizer.onerror = (event) => {
+    onError?.(event?.error ?? "unknown");
+    done();
+  };
   recognizer.onend = done;
 
   try {

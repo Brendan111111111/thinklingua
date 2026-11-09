@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { buildExercises, buildReview, earAudio } from "@/lib/exercises";
-import { findLesson, getCourse, scriptClass } from "@/lib/content";
+import { buildExercises, buildReading, buildReview, buildSpeaking, earAudio } from "@/lib/exercises";
+import { findLesson, findReadingLesson, findSpeakingUnit, getCourse, scriptClass } from "@/lib/content";
 import {
   HEART_MAX,
   completeLesson,
@@ -17,6 +17,7 @@ import {
 } from "@/lib/progress";
 import { canRecognise, listenOnce, soundsClose, speak, stopSpeaking } from "@/lib/speech";
 import { SpeakButton } from "./SpeakButton";
+import { SpeakCard } from "./SpeakCard";
 import { Badge, Icon, ProgressBar, Ring, cn } from "./ui";
 
 type Props = { courseId: string; lessonId?: string; mode?: "lesson" | "review" };
@@ -29,11 +30,23 @@ export function LessonRunner({ courseId, lessonId, mode = "lesson" }: Props) {
     const currentCourse = getCourse(courseId);
     if (!currentCourse) return [];
     if (mode === "review") return buildReview(currentCourse, Object.keys(currentCourse.lexemes));
+    if (lessonId?.startsWith("read.")) {
+      const reading = findReadingLesson(currentCourse, lessonId);
+      return reading ? buildReading(reading) : [];
+    }
+    if (lessonId?.startsWith("speak.")) {
+      const unit = findSpeakingUnit(currentCourse, lessonId);
+      return unit ? buildSpeaking(currentCourse, unit) : [];
+    }
     const found = lessonId ? findLesson(currentCourse, lessonId) : undefined;
     return found ? buildExercises(currentCourse, found.lesson) : [];
   }, [courseId, lessonId, mode]);
 
   const found = course && lessonId ? findLesson(course, lessonId) : undefined;
+  const readingLesson = course && lessonId ? findReadingLesson(course, lessonId) : undefined;
+  const speakingUnit = course && lessonId ? findSpeakingUnit(course, lessonId) : undefined;
+  const lessonTitle = readingLesson?.title ?? speakingUnit?.title ?? found?.lesson.title ?? "";
+  const unitTitle = readingLesson ? "Reading" : speakingUnit ? "Speaking" : found?.unit.title;
   const { progress, ready } = useProgress();
 
   const [index, setIndex] = useState(0);
@@ -81,7 +94,8 @@ export function LessonRunner({ courseId, lessonId, mode = "lesson" }: Props) {
 
   useEffect(() => {
     if (!ready || !current || !course || !progress.settings.autoPlay) return;
-    if (current.kind === "read") return;
+    // Reading drills hide the answer, so auto-playing them would give it away.
+    if (current.kind === "read" || current.kind === "scriptRead" || current.kind === "scriptWord") return;
     const text = current.kind === "ear" ? earAudio(current.drill).text : current.text;
     const timer = window.setTimeout(() => {
       void speak(text, { locale: course.locale, rate });
@@ -133,8 +147,10 @@ export function LessonRunner({ courseId, lessonId, mode = "lesson" }: Props) {
   function currentGloss(): string {
     if (!current) return "";
     if (current.kind === "ear") return earAudio(current.drill).gloss;
-    if (current.kind === "build" || current.kind === "shadow") return current.gloss;
-    return course?.lexemes[current.lexemeId]?.gloss ?? "";
+    if (current.kind === "build" || current.kind === "shadow" || current.kind === "speak" || current.kind === "scriptWord") {
+      return current.gloss;
+    }
+    return "";
   }
 
   function isCorrect(): boolean {
@@ -145,6 +161,9 @@ export function LessonRunner({ courseId, lessonId, mode = "lesson" }: Props) {
       return attempt.join("\u0001") === current.tiles.join("\u0001");
     }
     if (current.kind === "ear") return chosen === current.drill.target;
+    if (current.kind === "scriptRead" || current.kind === "scriptListen") return chosen === current.glyph;
+    if (current.kind === "scriptWord") return chosen === current.latin;
+    if (current.kind === "speak") return false;
     return chosen === current.lexemeId;
   }
 
@@ -241,7 +260,7 @@ export function LessonRunner({ courseId, lessonId, mode = "lesson" }: Props) {
           <h1 className="mt-5 font-display text-2xl font-semibold">
             {result.perfect ? "Flawless." : "Lesson complete."}
           </h1>
-          <p className={cn("mt-1 text-lg", targetClass)}>{mode === "review" ? "ทบทวนเสร็จแล้ว" : (found?.lesson.title ?? "")}</p>
+          <p className={cn("mt-1 text-lg", targetClass)}>{mode === "review" ? "ทบทวนเสร็จแล้ว" : lessonTitle}</p>
 
           <div className="mt-6 grid grid-cols-3 gap-3">
             <div className="card-soft p-3">
@@ -294,7 +313,16 @@ export function LessonRunner({ courseId, lessonId, mode = "lesson" }: Props) {
   const answering = phase === "answer";
   const optionState = (id: string) => {
     if (answering) return chosen === id ? "picked" : undefined;
-    const correctId = current.kind === "ear" ? current.drill.target : "lexemeId" in current ? current.lexemeId : "";
+    const correctId =
+      current.kind === "ear"
+        ? current.drill.target
+        : current.kind === "scriptWord"
+          ? current.latin
+          : current.kind === "scriptRead" || current.kind === "scriptListen"
+            ? current.glyph
+            : "lexemeId" in current
+              ? current.lexemeId
+              : "";
     if (id === correctId) return "correct";
     if (id === chosen) return "wrong";
     return "dim";
@@ -315,7 +343,7 @@ export function LessonRunner({ courseId, lessonId, mode = "lesson" }: Props) {
 
       <div className="mb-5 flex items-center justify-between text-[11px] uppercase tracking-wider text-muted">
         <span>
-          {mode === "review" ? "Review" : found?.unit.title} · {Math.min(index + 1, total)}/{total}
+          {mode === "review" ? "Review" : unitTitle} · {Math.min(index + 1, total)}/{total}
         </span>
         <button
           type="button"
@@ -512,7 +540,102 @@ export function LessonRunner({ courseId, lessonId, mode = "lesson" }: Props) {
           </div>
         )}
 
-        {current.kind !== "shadow" && (
+        {current.kind === "scriptRead" && (
+          <div className="anim-slide">
+            <Prompt title="What sound does this letter make?" hint="Look at the shape, then choose the sound." />
+            <div className="mt-7 flex justify-center">
+              <p className={cn("text-7xl font-semibold", targetClass)}>{current.glyph}</p>
+            </div>
+            <div className="mt-8 grid grid-cols-2 gap-3">
+              {current.options.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  disabled={!answering}
+                  data-state={optionState(option.id)}
+                  onClick={() => setChosen(option.id)}
+                  className="answer py-5"
+                >
+                  <span className="text-xl font-semibold">{option.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {current.kind === "scriptListen" && (
+          <div className="anim-slide">
+            <Prompt title="Hear the sound. Pick the letter." hint="The letter appears after you answer." />
+            <div className="mt-7 flex justify-center">
+              <SpeakButton text={current.pronounce} locale={course.locale} rate={rate} size="lg" />
+            </div>
+            {!answering && (
+              <p className="mt-4 text-center text-sm text-muted">
+                <span className={cn("text-2xl text-cream", targetClass)}>{current.glyph}</span> · {current.sound}
+              </p>
+            )}
+            <div className="mt-7 grid grid-cols-2 gap-3">
+              {current.options.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  disabled={!answering}
+                  data-state={optionState(option.id)}
+                  onClick={() => setChosen(option.id)}
+                  className="answer py-6"
+                >
+                  <span className={cn("text-4xl font-semibold", targetClass)}>{option.glyph}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {current.kind === "scriptWord" && (
+          <div className="anim-slide">
+            <Prompt title="Read the word." hint="Blend the letters you just learned. Sound is revealed after you answer." />
+            <div className="mt-7 flex flex-col items-center gap-2">
+              <p className={cn("text-4xl font-semibold", targetClass)}>{current.text}</p>
+            </div>
+            <div className="mt-7 grid gap-2.5">
+              {current.options.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  disabled={!answering}
+                  data-state={optionState(option.id)}
+                  onClick={() => setChosen(option.id)}
+                  className="answer !flex-row !justify-start px-4 py-3"
+                >
+                  <span className="text-lg">{option.text}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {current.kind === "speak" && (
+          <SpeakCard
+            key={current.key}
+            text={current.text}
+            latin={current.latin}
+            gloss={current.gloss}
+            glyph={current.glyph}
+            tone={current.tone}
+            locale={course.locale}
+            rate={rate}
+            locked={!answering}
+            onGraded={(pass) => {
+              if (phase !== "answer") return;
+              setPhase(pass ? "correct" : "wrong");
+              if (pass) setScore((value) => value + 1);
+              else spendHeart();
+              recordAnswer({ correct: pass, lexemeId: current.lexemeId });
+            }}
+          />
+        )}
+
+        {(current.kind !== "shadow" && current.kind !== "speak") && (
           <div className="mt-7 flex items-center justify-between gap-3">
             <p className="text-xs text-muted">
               {showGloss ? "You peeked — this lesson will not count toward your no-English streak." : "Try it before you peek."}

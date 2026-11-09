@@ -1,4 +1,5 @@
 import type { Course, EarDrill, Lexeme, Phrase } from "./types";
+import { frenchReading } from "./reading";
 
 const L = (
   id: string,
@@ -245,4 +246,5 @@ export const french: Course = {
       ],
     },
   ],
+  reading: frenchReading,
 };

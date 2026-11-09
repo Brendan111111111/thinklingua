@@ -1,4 +1,4 @@
-import type { Course, EarDrill, Lesson, Lexeme, Phrase } from "./content/types";
+import type { Course, EarDrill, Lesson, Lexeme, Phrase, ReadingLesson, ReadingSymbol, Unit } from "./content/types";
 
 export type GlyphOption = { id: string; glyph: string; text: string };
 
@@ -51,6 +51,46 @@ export type Exercise =
       gloss: string;
       glyph: string;
       lexemeId?: string;
+    }
+  | {
+      kind: "speak";
+      key: string;
+      text: string;
+      latin: string;
+      gloss: string;
+      glyph: string;
+      tone?: string;
+      lexemeId?: string;
+    }
+  | {
+      kind: "scriptRead";
+      key: string;
+      /** The letter shown, also the id of the correct answer. */
+      glyph: string;
+      text: string;
+      latin: string;
+      pronounce: string;
+      sound: string;
+      options: { id: string; label: string }[];
+    }
+  | {
+      kind: "scriptListen";
+      key: string;
+      glyph: string;
+      text: string;
+      latin: string;
+      pronounce: string;
+      sound: string;
+      options: { id: string; glyph: string }[];
+    }
+  | {
+      kind: "scriptWord";
+      key: string;
+      text: string;
+      latin: string;
+      gloss: string;
+      glyph: string;
+      options: { id: string; text: string }[];
     };
 
 /* ── deterministic randomness ─────────────────────────────────────────────
@@ -261,4 +301,128 @@ export function buildReview(course: Course, lexemeIds: string[], cap = 12): Exer
 /** Deterministic answer index for the ear drill so the UI never re-shuffles. */
 export function earAudio(drill: EarDrill): { text: string; latin: string; gloss: string } {
   return drill.target === "a" ? drill.a : drill.b;
+}
+
+/* ── speaking track ───────────────────────────────────────────────────── */
+function speak(
+  key: string,
+  entry: { text: string; latin: string; gloss: string; glyph: string; tone?: string; lexemeId?: string },
+): Exercise {
+  return { kind: "speak", key, ...entry };
+}
+
+/**
+ * One speaking lesson per unit: the learner says the unit's own words, so the
+ * drill never asks for a sound the course has not introduced yet.
+ */
+export function buildSpeaking(course: Course, unit: Unit): Exercise[] {
+  const plan: Exercise[] = [];
+  const seen = new Set<string>();
+
+  unit.lessons.flatMap((lesson) => lesson.newLexemes).forEach((id) => {
+    if (seen.has(id) || plan.length >= 7) return;
+    seen.add(id);
+    const lexeme = course.lexemes[id];
+    if (!lexeme) return;
+    plan.push(
+      speak(`speak:${lexeme.id}`, {
+        text: lexeme.text,
+        latin: lexeme.latin,
+        gloss: lexeme.gloss,
+        glyph: lexeme.glyph,
+        tone: lexeme.tone,
+        lexemeId: lexeme.id,
+      }),
+    );
+  });
+
+  const phraseIds = [...new Set(unit.lessons.flatMap((lesson) => lesson.phrases))].slice(0, 2);
+  phraseIds.forEach((id) => {
+    const phrase = course.phrases[id];
+    if (!phrase) return;
+    plan.push(speak(`speak:${phrase.id}`, { text: phrase.text, latin: phrase.latin, gloss: phrase.gloss, glyph: phrase.glyph }));
+  });
+
+  return plan;
+}
+
+/* ── reading track ────────────────────────────────────────────────────── */
+function readingGlyphOptions(lesson: ReadingLesson, target: ReadingSymbol, key: string) {
+  const random = rng(hash(`${key}:glyph`));
+  const others = lesson.symbols.filter((symbol) => symbol.glyph !== target.glyph);
+  const distractors = shuffle(others, random).slice(0, 3);
+  return shuffle([target, ...distractors], random).map((symbol) => ({ id: symbol.glyph, glyph: symbol.glyph }));
+}
+
+function readingSoundOptions(lesson: ReadingLesson, target: ReadingSymbol, key: string) {
+  const random = rng(hash(`${key}:sound`));
+  const others = lesson.symbols.filter((symbol) => symbol.glyph !== target.glyph && symbol.sound !== target.sound);
+  const distractors = shuffle(others, random).slice(0, 3);
+  return shuffle([target, ...distractors], random).map((symbol) => ({ id: symbol.glyph, label: symbol.sound }));
+}
+
+/** Reading lessons alternate direction: letter → sound, then sound → letter. */
+export function buildReading(lesson: ReadingLesson): Exercise[] {
+  const plan: Exercise[] = [];
+  const seen = new Set<string>();
+
+  const push = (exercise: Exercise) => {
+    if (seen.has(exercise.key)) return;
+    seen.add(exercise.key);
+    plan.push(exercise);
+  };
+
+  lesson.symbols.forEach((symbol, index) => {
+    const read: Exercise = {
+      kind: "scriptRead",
+      key: `scriptRead:${lesson.id}:${symbol.glyph}`,
+      glyph: symbol.glyph,
+      text: symbol.glyph,
+      latin: symbol.sound,
+      pronounce: symbol.pronounce,
+      sound: symbol.sound,
+      options: readingSoundOptions(lesson, symbol, `scriptRead:${lesson.id}:${symbol.glyph}`),
+    };
+    const listen: Exercise = {
+      kind: "scriptListen",
+      key: `scriptListen:${lesson.id}:${symbol.glyph}`,
+      glyph: symbol.glyph,
+      text: symbol.glyph,
+      latin: symbol.sound,
+      pronounce: symbol.pronounce,
+      sound: symbol.sound,
+      options: readingGlyphOptions(lesson, symbol, `scriptListen:${lesson.id}:${symbol.glyph}`),
+    };
+    if (index % 2 === 0) {
+      push(read);
+      push(listen);
+    } else {
+      push(listen);
+      push(read);
+    }
+  });
+
+  const words = lesson.symbols
+    .map((symbol) => symbol.example)
+    .filter((example): example is { text: string; latin: string; gloss: string } => Boolean(example))
+    .filter((example, index, all) => all.findIndex((entry) => entry.latin === example.latin) === index)
+    .slice(0, 4);
+
+  if (words.length >= 2) {
+    const random = rng(hash(`${lesson.id}:words`));
+    words.slice(0, 3).forEach((word) => {
+      const options = shuffle(words, random).map((entry) => ({ id: entry.latin, text: entry.latin }));
+      push({
+        kind: "scriptWord",
+        key: `scriptWord:${lesson.id}:${word.latin}`,
+        text: word.text,
+        latin: word.latin,
+        gloss: word.gloss,
+        glyph: word.text,
+        options,
+      });
+    });
+  }
+
+  return plan.slice(0, 16);
 }

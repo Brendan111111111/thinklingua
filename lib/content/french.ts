@@ -43,6 +43,18 @@ const lexemeList: Lexeme[] = [
   L("fr.fromage", "🧀", "fromage", "fromazh", "cheese"),
   L("fr.poulet", "🍗", "poulet", "pule", "chicken"),
   L("fr.bon", "😋", "bon", "bon", "good"),
+  L("fr.maison", "🏠", "maison", "mezon", "house, home"),
+  L("fr.table", "🪑", "table", "tabl", "table"),
+  L("fr.chaise", "🪑", "chaise", "shez", "chair"),
+  L("fr.grand", "⬛", "grand", "gran", "big"),
+  L("fr.petit", "▫️", "petit", "puh-ti", "small"),
+  L("fr.mon", "🔗", "mon", "mon", "my"),
+  L("fr.aujourdhui", "🗓️", "aujourd'hui", "ozhur-dwi", "today"),
+  L("fr.demain", "🌅", "demain", "duh-man", "tomorrow"),
+  L("fr.nuit", "🌙", "nuit", "nwi", "night"),
+  L("fr.maintenant", "⏱️", "maintenant", "ment-nan", "now"),
+  L("fr.tard", "⌛", "tard", "tar", "late"),
+  L("fr.travaille", "💼", "travaille", "travai", "work (I work)"),
 ];
 
 const phraseList: Phrase[] = [
@@ -54,6 +66,12 @@ const phraseList: Phrase[] = [
   P("fr.p6", "🍎", "la pomme est délicieuse", "la pom e delisyeuz", "the apple is delicious", ["la", "pomme", "est", "délicieuse"], ["fromage", "très"]),
   P("fr.p7", "☕", "je bois du café", "zhuh bwa du kafe", "I drink coffee", ["je", "bois", "du", "café"], ["mange", "eau"]),
   P("fr.p8", "😋", "très bon", "tre bon", "very good", ["très", "bon"], ["merci", "oui"]),
+  P("fr.p9", "🏠", "c'est ma maison", "se ma mezon", "this is my house", ["c'est", "ma", "maison"], ["table", "non"]),
+  P("fr.p10", "🪑", "la table est grande", "la tabl e grand", "the table is big", ["la", "table", "est", "grande"], ["chaise", "petite"]),
+  P("fr.p11", "🪑", "je veux une petite chaise", "zhuh vuh ün puhtit shez", "I want a small chair", ["je", "veux", "une", "petite", "chaise"], ["table", "grande"]),
+  P("fr.p12", "💼", "aujourd'hui je travaille", "ozhur-dwi zhuh travai", "today I work", ["aujourd'hui", "je", "travaille"], ["demain", "nuit"]),
+  P("fr.p13", "🌅", "demain je bois du café", "duh-man zhuh bwa du kafe", "tomorrow I drink coffee", ["demain", "je", "bois", "du", "café"], ["aujourd'hui", "eau"]),
+  P("fr.p14", "🌙", "maintenant il fait nuit", "ment-nan il fe nwi", "now it is night", ["maintenant", "il", "fait", "nuit"], ["tard", "demain"]),
 ];
 
 const ear = (
@@ -152,6 +170,76 @@ export const french: Course = {
           ear: [
             ear("fr.e7", "s ↔ z", ["poisson", "pwason", "fish"], ["poison", "pwazon", "poison"], "b"),
             ear("fr.e8", "nasal vowel", ["beau", "bo", "beautiful"], ["bu", "bü", "drunk"], "b"),
+          ],
+        },
+      ],
+    },
+    {
+      id: "fr.u3",
+      title: "Chez moi",
+      latin: "At home",
+      glyph: "🏠",
+      tint: "violet",
+      lessons: [
+        {
+          id: "fr.u3.l1",
+          title: "Ma maison",
+          latin: "My house",
+          intro: "Décris chez toi.",
+          kind: "lesson",
+          newLexemes: ["fr.maison", "fr.table", "fr.chaise", "fr.grand", "fr.petit", "fr.mon"],
+          phrases: ["fr.p9", "fr.p10", "fr.p11"],
+          ear: [
+            ear("fr.e9", "u ↔ ou", ["tu", "tü", "you"], ["tout", "tu", "all"], "b"),
+            ear("fr.e10", "nasal vowel", ["beau", "bo", "beautiful"], ["bu", "bü", "drunk"], "a"),
+          ],
+        },
+        {
+          id: "fr.u3.l2",
+          title: "À la maison",
+          latin: "Around the house",
+          intro: "Les choses de la maison.",
+          kind: "lesson",
+          newLexemes: ["fr.maison", "fr.chaise"],
+          phrases: ["fr.p9", "fr.p11"],
+          ear: [
+            ear("fr.e11", "s ↔ z", ["poison", "pwazon", "poison"], ["poisson", "pwason", "fish"], "a"),
+            ear("fr.e12", "u ↔ ou", ["tout", "tu", "all"], ["tu", "tü", "you"], "a"),
+          ],
+        },
+      ],
+    },
+    {
+      id: "fr.u4",
+      title: "Le jour",
+      latin: "The day",
+      glyph: "🌅",
+      tint: "jade",
+      lessons: [
+        {
+          id: "fr.u4.l1",
+          title: "Aujourd'hui",
+          latin: "Today",
+          intro: "Le temps qui passe.",
+          kind: "lesson",
+          newLexemes: ["fr.aujourdhui", "fr.demain", "fr.nuit", "fr.maintenant", "fr.tard", "fr.travaille"],
+          phrases: ["fr.p12", "fr.p13", "fr.p14"],
+          ear: [
+            ear("fr.e13", "nasal vowel", ["bu", "bü", "drunk"], ["beau", "bo", "beautiful"], "b"),
+            ear("fr.e14", "s ↔ z", ["poisson", "pwason", "fish"], ["poison", "pwazon", "poison"], "b"),
+          ],
+        },
+        {
+          id: "fr.u4.l2",
+          title: "Demain",
+          latin: "Tomorrow",
+          intro: "Demain et maintenant.",
+          kind: "lesson",
+          newLexemes: ["fr.aujourdhui", "fr.demain", "fr.maintenant"],
+          phrases: ["fr.p12", "fr.p13", "fr.p14"],
+          ear: [
+            ear("fr.e15", "u ↔ ou", ["dessus", "dusü", "on top"], ["dessous", "dusu", "underneath"], "b"),
+            ear("fr.e16", "nasal vowel", ["beau", "bo", "beautiful"], ["bu", "bü", "drunk"], "a"),
           ],
         },
       ],

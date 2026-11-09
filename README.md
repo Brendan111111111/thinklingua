@@ -32,8 +32,9 @@ Two mechanics keep the method honest:
   would be forgotten.
 - **AI conversation partner** — a persona per language that speaks only the target language, keeps turns to two sentences, asks
   one question, and **recasts** mistakes instead of grading them. Reply audio uses the same native voice.
-- **Native voices** — Azure neural voices (native Thai and Japanese speakers) out of the box once a key is present, with Google
-  Cloud TTS and ElevenLabs as alternatives, and a locale-filtered browser voice as the no-key fallback.
+- **Native voices, no setup** — every word is audible on a fresh clone through a keyless native-voice fallback; add an Azure key
+  for the studio neural voices (`th-TH-PremwadeeNeural`, `ja-JP-NanamiNeural`), with Google Cloud TTS and ElevenLabs as
+  alternatives and a locale-filtered device voice as the last resort.
 - **Four courses** — Thai, Japanese, Spanish, French, all generated from the same exercise engine.
 - **Local-first** — progress is stored in the browser. No account, no server database.
 
@@ -44,8 +45,9 @@ bun install        # or npm install / pnpm install
 bun run dev        # http://localhost:3000
 ```
 
-The app is fully playable with **no keys at all**: lessons, drills, gamification and spaced repetition all work, and speech falls
-back to the best voice installed on the device.
+The app is fully playable with **no keys at all**: lessons, drills, gamification and spaced repetition all work, and speech uses a
+keyless native-voice service, so Thai is pronounced by a Thai voice and Japanese by a Japanese one from the first click. If that
+service is unreachable it falls back to the best voice installed on the device. Set `DISABLE_FREE_TTS=1` to opt out.
 
 To enable the good stuff, copy the example env file and fill in what you have:
 

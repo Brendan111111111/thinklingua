@@ -327,11 +327,11 @@ function speak(
 }
 
 /**
- * Four speaking passes per unit: the learner only says words and sentences the
- * unit has already introduced. Each pass rotates the selection order so the
- * later passes do not simply repeat the first one.
+ * Speaking passes per unit: the learner only says words and sentences the unit
+ * has already introduced. Each pass rotates the selection order so later passes
+ * do not simply repeat the first one. Mastery units use six passes.
  */
-export function buildSpeaking(course: Course, unit: Unit, variant: 0 | 1 | 2 | 3 = 0): Exercise[] {
+export function buildSpeaking(course: Course, unit: Unit, variant: 0 | 1 | 2 | 3 | 4 | 5 = 0): Exercise[] {
   const plan: Exercise[] = [];
   const seen = new Set<string>();
 
@@ -340,7 +340,9 @@ export function buildSpeaking(course: Course, unit: Unit, variant: 0 | 1 | 2 | 3
     if (variant === 0) return lexemeIds;
     if (variant === 1) return [...lexemeIds].reverse();
     if (variant === 2) return [...lexemeIds.slice(1), ...lexemeIds.slice(0, 1)];
-    return [...lexemeIds.slice(2), ...lexemeIds.slice(0, 2)];
+    if (variant === 3) return [...lexemeIds.slice(2), ...lexemeIds.slice(0, 2)];
+    if (variant === 4) return [...lexemeIds.slice(3), ...lexemeIds.slice(0, 3)];
+    return [...lexemeIds.slice(1), ...lexemeIds.slice(0, 1)].reverse();
   })();
 
   orderedLexemeIds.forEach((id) => {

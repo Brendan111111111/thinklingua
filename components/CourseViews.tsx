@@ -10,6 +10,7 @@ import {
   scriptClass,
   speakingLessonId,
   speakingLessonTitle,
+  speakingVariantsForUnit,
   tintClass,
   trackLessonIds,
   totalCourseLessons,
@@ -114,8 +115,6 @@ export function CoursePicker() {
   );
 }
 
-const SPEAKING_VARIANTS = [0, 1, 2, 3] as const;
-
 const TRACKS: { id: Track; label: string; hint: string }[] = [
   { id: "words", label: "Words", hint: "picture → sound → word" },
   { id: "speak", label: "Speaking", hint: "you talk, it grades" },
@@ -170,14 +169,19 @@ export function CourseMap({ courseId }: { courseId: string }) {
 
   const milestoneUnitIndex = course.units.findIndex((unit) => unit.stage === "intermediate");
   const advancedUnitIndex = course.units.findIndex((unit) => unit.stage === "advanced");
+  const masteryUnitIndex = course.units.findIndex((unit) => unit.stage === "mastery");
   const milestoneReadingIndex = course.reading.findIndex((lesson) => lesson.stage === "intermediate");
   const advancedReadingIndex = course.reading.findIndex((lesson) => lesson.stage === "advanced");
+  const masteryReadingIndex = course.reading.findIndex((lesson) => lesson.stage === "mastery");
   const intermediateUnits = course.units.filter((unit) => unit.stage === "intermediate");
   const advancedUnits = course.units.filter((unit) => unit.stage === "advanced");
+  const masteryUnits = course.units.filter((unit) => unit.stage === "mastery");
   const intermediateReading = course.reading.filter((lesson) => lesson.stage === "intermediate");
   const advancedReading = course.reading.filter((lesson) => lesson.stage === "advanced");
-  const intermediateSpeakingIds = intermediateUnits.flatMap((unit) => SPEAKING_VARIANTS.map((variant) => speakingLessonId(unit, variant)));
-  const advancedSpeakingIds = advancedUnits.flatMap((unit) => SPEAKING_VARIANTS.map((variant) => speakingLessonId(unit, variant)));
+  const masteryReading = course.reading.filter((lesson) => lesson.stage === "mastery");
+  const intermediateSpeakingIds = intermediateUnits.flatMap((unit) => speakingVariantsForUnit(unit).map((variant) => speakingLessonId(unit, variant)));
+  const advancedSpeakingIds = advancedUnits.flatMap((unit) => speakingVariantsForUnit(unit).map((variant) => speakingLessonId(unit, variant)));
+  const masterySpeakingIds = masteryUnits.flatMap((unit) => speakingVariantsForUnit(unit).map((variant) => speakingLessonId(unit, variant)));
   const milestoneIds = [
     ...intermediateUnits.flatMap((unit) => unit.lessons.map((lesson) => lesson.id)),
     ...intermediateReading.map((lesson) => lesson.id),
@@ -187,6 +191,11 @@ export function CourseMap({ courseId }: { courseId: string }) {
     ...advancedUnits.flatMap((unit) => unit.lessons.map((lesson) => lesson.id)),
     ...advancedReading.map((lesson) => lesson.id),
     ...advancedSpeakingIds,
+  ];
+  const masteryIds = [
+    ...masteryUnits.flatMap((unit) => unit.lessons.map((lesson) => lesson.id)),
+    ...masteryReading.map((lesson) => lesson.id),
+    ...masterySpeakingIds,
   ];
   const milestoneDone = milestoneIds.filter((id) => progress.completed[id]).length;
   const milestonePercent = milestoneIds.length === 0 ? 0 : milestoneDone / milestoneIds.length;
@@ -202,6 +211,13 @@ export function CourseMap({ courseId }: { courseId: string }) {
   const advancedSpeakingDone = advancedSpeakingIds.filter((id) => progress.completed[id]).length;
   const advancedStarted = advancedDone > 0;
   const advancedReached = advancedIds.length > 0 && advancedDone === advancedIds.length;
+  const masteryDone = masteryIds.filter((id) => progress.completed[id]).length;
+  const masteryPercent = masteryIds.length === 0 ? 0 : masteryDone / masteryIds.length;
+  const masteryUnitsDone = masteryUnits.filter((unit) => unit.lessons.every((lesson) => progress.completed[lesson.id])).length;
+  const masteryReadingDone = masteryReading.filter((lesson) => progress.completed[lesson.id]).length;
+  const masterySpeakingDone = masterySpeakingIds.filter((id) => progress.completed[id]).length;
+  const masteryStarted = masteryDone > 0;
+  const masteryReached = masteryIds.length > 0 && masteryDone === masteryIds.length;
 
   return (
     <div>
@@ -333,6 +349,31 @@ export function CourseMap({ courseId }: { courseId: string }) {
         </div>
       </section>
 
+      <section className="mt-3">
+        <div className={cn("relative overflow-hidden rounded-3xl border p-5", masteryReached ? "border-jade/40 bg-jade/[0.07]" : "border-sakura/30 bg-sakura/[0.06]")}>
+          <div className={cn("pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full blur-2xl", masteryReached ? "bg-jade/20" : "bg-sakura/20")} />
+          <div className="relative flex flex-wrap items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className={cn("grid h-9 w-9 place-items-center rounded-xl border", masteryReached ? "border-jade/40 bg-jade/15 text-jade" : "border-sakura/40 bg-sakura/15 text-sakura")}>
+                <Icon name="bolt" className="h-4 w-4" />
+              </span>
+              <div>
+                <p className={cn("text-[11px] uppercase tracking-[0.2em]", masteryReached ? "text-jade" : "text-sakura")}>Mastery milestone</p>
+                <p className="mt-1 font-display text-xl font-semibold">The summit.</p>
+              </div>
+            </div>
+            <Badge tone={masteryReached ? "jade" : "sakura"}>{masteryReached ? "reached" : masteryStarted ? "in progress" : "up next"}</Badge>
+          </div>
+          <p className="mt-3 max-w-2xl text-xs text-muted">Finish the mastery units, the fourth reading set, and its six speaking passes.</p>
+          <div className="mt-4 grid grid-cols-3 gap-2 text-[11px] text-muted sm:max-w-lg">
+            <span><strong className="text-cream">{masteryUnitsDone}/{masteryUnits.length}</strong> units</span>
+            <span><strong className="text-cream">{masteryReadingDone}/{masteryReading.length}</strong> reading</span>
+            <span><strong className="text-cream">{masterySpeakingDone}/{masterySpeakingIds.length}</strong> speaking</span>
+          </div>
+          <ProgressBar className="mt-3" value={masteryPercent} tone={masteryReached ? "jade" : "sakura"} />
+        </div>
+      </section>
+
       <div className="mt-6 grid gap-2 rounded-3xl border border-line/70 bg-panel/40 p-2 sm:grid-cols-3">
         {TRACKS.map((option) => {
           const trackIds = trackLessonIds(course, option.id);
@@ -400,6 +441,13 @@ export function CourseMap({ courseId }: { courseId: string }) {
                     detail={`${advancedUnitsDone}/${advancedUnits.length} units done`}
                   />
                 )}
+                {unitIndex === masteryUnitIndex && (
+                  <MilestoneMarker
+                    label="Mastery milestone"
+                    complete={masteryUnitsDone === masteryUnits.length}
+                    detail={`${masteryUnitsDone}/${masteryUnits.length} units done`}
+                  />
+                )}
                 <section>
                 <div className="mb-3 flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -409,6 +457,7 @@ export function CourseMap({ courseId }: { courseId: string }) {
                         <h2 className={cn("font-display text-lg font-semibold", scriptClass[course.id])}>{unit.title}</h2>
                         {unit.stage === "intermediate" && <Badge tone="violet">intermediate</Badge>}
                         {unit.stage === "advanced" && <Badge tone="gold">advanced</Badge>}
+                        {unit.stage === "mastery" && <Badge tone="sakura">mastery</Badge>}
                       </div>
                       <p className="text-[11px] uppercase tracking-wide text-muted">
                         Unit {unitIndex + 1} · {unit.latin}
@@ -481,7 +530,7 @@ export function CourseMap({ courseId }: { courseId: string }) {
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {course.units.flatMap((unit) =>
-              SPEAKING_VARIANTS.map((variant) => {
+              speakingVariantsForUnit(unit).map((variant) => {
                 const id = speakingLessonId(unit, variant);
                 const record = progress.completed[id];
                 const wordCount = new Set(unit.lessons.flatMap((lesson) => lesson.newLexemes)).size;
@@ -538,6 +587,13 @@ export function CourseMap({ courseId }: { courseId: string }) {
                       label="Advanced milestone"
                       complete={advancedReadingDone === advancedReading.length}
                       detail={`${advancedReadingDone}/${advancedReading.length} reading lessons done`}
+                    />
+                  )}
+                  {index === masteryReadingIndex && (
+                    <MilestoneMarker
+                      label="Mastery milestone"
+                      complete={masteryReadingDone === masteryReading.length}
+                      detail={`${masteryReadingDone}/${masteryReading.length} reading lessons done`}
                     />
                   )}
                   <Link

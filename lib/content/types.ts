@@ -48,7 +48,7 @@ export type EarDrill = {
 /** A lesson family the learner can pick from the course map. */
 export type Track = "words" | "speak" | "read";
 
-export type SpeakingVariant = 0 | 1 | 2 | 3;
+export type SpeakingVariant = 0 | 1 | 2 | 3 | 4 | 5;
 
 /** One letter (or letter group) and the sound it makes. */
 export type ReadingSymbol = {
@@ -68,7 +68,7 @@ export type ReadingLesson = {
   intro: string;
   symbols: ReadingSymbol[];
   /** Explicit level tag, used by the expansion reading sets. */
-  stage?: "beginner" | "intermediate" | "advanced";
+  stage?: "beginner" | "intermediate" | "advanced" | "mastery";
 };
 
 export type LessonKind = "lesson" | "checkpoint";
@@ -93,7 +93,7 @@ export type Unit = {
   /** Accent token used for the unit's gradient. */
   tint: "gold" | "sakura" | "jade" | "sky" | "violet";
   /** Explicit level tag for the course map. */
-  stage?: "beginner" | "intermediate" | "advanced";
+  stage?: "beginner" | "intermediate" | "advanced" | "mastery";
   lessons: Lesson[];
 };
 

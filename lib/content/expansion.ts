@@ -9,6 +9,10 @@ type ExpansionCopy = {
   advancedLesson: string;
   advancedIntro: string;
   advancedReadingSuffix: string;
+  masteryUnits: string[];
+  masteryLesson: string;
+  masteryIntro: string;
+  masteryReadingSuffix: string;
 };
 
 const COPY: Record<LangId, ExpansionCopy> = {
@@ -21,6 +25,10 @@ const COPY: Record<LangId, ExpansionCopy> = {
     advancedLesson: "ฝึกขั้นสูง",
     advancedIntro: "ใช้ภาษาไทยให้ลึกและเป็นธรรมชาติขึ้น",
     advancedReadingSuffix: "อ่านขั้นสูง",
+    masteryUnits: ["อภิปราย", "เรื่องเล่า", "ความเป็นไปได้", "งานขั้นสูง", "สังคม", "วัฒนธรรมร่วมสมัย", "สื่อและข้อมูล", "การนำเสนอ", "สรุปขั้นสูงสุด"],
+    masteryLesson: "ฝึกระดับเชี่ยวชาญ",
+    masteryIntro: "ใช้ภาษาไทยอย่างแม่นยำและยืดหยุ่น",
+    masteryReadingSuffix: "อ่านระดับเชี่ยวชาญ",
   },
   ja: {
     units: ["復習", "まちで", "人と予定", "中間まとめ"],
@@ -31,6 +39,10 @@ const COPY: Record<LangId, ExpansionCopy> = {
     advancedLesson: "上級練習",
     advancedIntro: "知っている言葉で、より深い表現を作る。",
     advancedReadingSuffix: "上級読解",
+    masteryUnits: ["討論", "物語", "可能性", "仕事の実践", "社会", "現代文化", "情報とメディア", "プレゼン", "最上級まとめ"],
+    masteryLesson: "熟達練習",
+    masteryIntro: "日本語をより正確に、自由に使う。",
+    masteryReadingSuffix: "熟達読解",
   },
   es: {
     units: ["Repaso activo", "En la ciudad", "Personas y planes", "Cierre intermedio"],
@@ -41,6 +53,10 @@ const COPY: Record<LangId, ExpansionCopy> = {
     advancedLesson: "Práctica avanzada",
     advancedIntro: "Usa el idioma con más matices y precisión.",
     advancedReadingSuffix: "lectura avanzada",
+    masteryUnits: ["Debate", "Narrativa", "Posibilidades", "Trabajo avanzado", "Sociedad", "Cultura contemporánea", "Medios e información", "Presentaciones", "Cierre de maestría"],
+    masteryLesson: "Práctica de maestría",
+    masteryIntro: "Usa el español con precisión y flexibilidad.",
+    masteryReadingSuffix: "lectura de maestría",
   },
   fr: {
     units: ["Révision active", "En ville", "Personnes et projets", "Bilan intermédiaire"],
@@ -51,13 +67,19 @@ const COPY: Record<LangId, ExpansionCopy> = {
     advancedLesson: "Pratique avancée",
     advancedIntro: "Utilise la langue avec plus de nuance et de précision.",
     advancedReadingSuffix: "lecture avancée",
+    masteryUnits: ["Débat", "Narration", "Possibilités", "Travail avancé", "Société", "Culture contemporaine", "Médias et information", "Présentations", "Bilan de maîtrise"],
+    masteryLesson: "Pratique de maîtrise",
+    masteryIntro: "Utilise le français avec précision et souplesse.",
+    masteryReadingSuffix: "lecture de maîtrise",
   },
 };
 
 const UNIT_GLYPHS = ["🔁", "🏙️", "👥", "🏁"];
 const ADVANCED_GLYPHS = ["🧠", "📖", "🔮", "🗣️", "💼", "🎭", "📰", "🤝", "🏆"];
+const MASTERY_GLYPHS = ["🏛️", "📚", "🧭", "⚙️", "🌍", "🎨", "🧩", "🎤", "👑"];
 const UNIT_TINTS: Unit["tint"][] = ["jade", "sky", "violet", "gold"];
 const ADVANCED_CONTENT_COUNTS = [3, 3, 3, 2, 2, 2, 2, 2, 2];
+const MASTERY_CONTENT_COUNTS = [4, 4, 4, 4, 4, 4, 4, 4, 4];
 
 function pick<T>(items: T[], start: number, count: number): T[] {
   if (items.length === 0) return [];
@@ -164,6 +186,32 @@ export function expandLevels(course: Course): Course {
     };
   });
 
+  const masteryUnits: Unit[] = MASTERY_CONTENT_COUNTS.map((contentCount, unitIndex) => {
+    const number = 20 + unitIndex;
+    const lessons: Lesson[] = Array.from({ length: contentCount }, (_, lessonIndex) => {
+      const seed = 200 + unitIndex * 4 + lessonIndex;
+      return {
+        id: `${course.id}.u${number}.l${lessonIndex + 1}`,
+        title: `${copy.masteryLesson} ${lessonIndex + 1}`,
+        latin: "Mastery · extension",
+        intro: copy.masteryIntro,
+        kind: "lesson",
+        newLexemes: pick(lexemePool, seed * 2, 4),
+        phrases: pick(phrasePool, seed * 2, 2),
+        ear: pick(earPool, seed * 2, 2),
+      };
+    });
+    return {
+      id: `${course.id}.u${number}`,
+      title: copy.masteryUnits[unitIndex],
+      latin: "Mastery · extension",
+      glyph: MASTERY_GLYPHS[unitIndex],
+      tint: UNIT_TINTS[unitIndex % UNIT_TINTS.length],
+      stage: "mastery",
+      lessons,
+    };
+  });
+
   const readingSource = course.reading.filter((lesson) => !lesson.id.endsWith(".practice"));
   const readingSymbols = readingSource.flatMap((lesson) => lesson.symbols);
   const intermediateReading: ReadingLesson[] = Array.from({ length: 15 }, (_, index) => {
@@ -198,9 +246,30 @@ export function expandLevels(course: Course): Course {
     };
   });
 
+  const masteryReading: ReadingLesson[] = Array.from({ length: 54 }, (_, index) => {
+    const source = readingSource[index % readingSource.length];
+    const symbols = Array.from({ length: 5 }, (_, offset) => ({
+      ...readingSymbols[(index * 9 + offset) % readingSymbols.length],
+    }));
+    return {
+      ...source,
+      id: `read.${course.id}.mastery.${index + 1}`,
+      title: `${source.title} · ${copy.masteryReadingSuffix}`,
+      latin: "Mastery · reading extension",
+      intro: "Dense sound strings for fluent script reading.",
+      symbols,
+      stage: "mastery",
+    };
+  });
+
   return {
     ...course,
-    units: [...labelledUnits, ...intermediateUnits, ...advancedUnits],
-    reading: [...normalizeIntermediateReading(course), ...intermediateReading, ...advancedReading],
+    units: [...labelledUnits, ...intermediateUnits, ...advancedUnits, ...masteryUnits],
+    reading: [
+      ...normalizeIntermediateReading(course),
+      ...intermediateReading,
+      ...advancedReading,
+      ...masteryReading,
+    ],
   };
 }

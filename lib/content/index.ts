@@ -22,6 +22,12 @@ export type {
 
 const PRACTICE_SUFFIX = ".practice";
 const AGAIN: Record<LangId, string> = { th: "อีกครั้ง", ja: "もう一度", es: "otra vez", fr: "encore" };
+const FOUR_SPEAKING_VARIANTS = [0, 1, 2, 3] as const;
+const SIX_SPEAKING_VARIANTS = [0, 1, 2, 3, 4, 5] as const;
+
+export function speakingVariantsForUnit(unit: Unit): readonly SpeakingVariant[] {
+  return unit.stage === "mastery" ? SIX_SPEAKING_VARIANTS : FOUR_SPEAKING_VARIANTS;
+}
 
 function practiceLesson(course: Course, lesson: Lesson): Lesson {
   return {
@@ -120,6 +126,8 @@ export function speakingLessonId(unit: Unit, variant: SpeakingVariant = 0): stri
 }
 
 export function speakingVariantFor(lessonId: string): SpeakingVariant {
+  if (lessonId.endsWith(`${PRACTICE_SUFFIX}-5`)) return 5;
+  if (lessonId.endsWith(`${PRACTICE_SUFFIX}-4`)) return 4;
   if (lessonId.endsWith(`${PRACTICE_SUFFIX}-3`)) return 3;
   if (lessonId.endsWith(`${PRACTICE_SUFFIX}-2`)) return 2;
   if (lessonId.endsWith(PRACTICE_SUFFIX)) return 1;
@@ -145,7 +153,8 @@ export function findReadingLesson(course: Course, lessonId: string): ReadingLess
 /** Every lesson id in a track, in the order the course map shows them. */
 export function trackLessonIds(course: Course, track: Track): string[] {
   if (track === "words") return allLessons(course).map(({ lesson }) => lesson.id);
-  if (track === "speak") return course.units.flatMap((unit) => ([0, 1, 2, 3] as const).map((variant) => speakingLessonId(unit, variant)));
+  if (track === "speak")
+    return course.units.flatMap((unit) => speakingVariantsForUnit(unit).map((variant) => speakingLessonId(unit, variant)));
   return course.reading.map((lesson) => lesson.id);
 }
 

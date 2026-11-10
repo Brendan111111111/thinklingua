@@ -15,13 +15,49 @@ type Body = {
   known?: string[];
 };
 
-function baseUrl(): string {
-  const configured = process.env.AI_BASE_URL ?? process.env.OPENAI_BASE_URL ?? "https://freebuff.com/api/v1/paid";
-  return configured.replace(/\/+$/, "");
+const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai";
+const FREEBUFF_BASE_URL = "https://freebuff.com/api/v1/paid";
+const GEMINI_DEFAULT_MODEL = "gemini-3.8-flash";
+const DEFAULT_MODEL = "gpt-4o-mini";
+
+type TutorProvider = "gemini" | "openai";
+
+function env(key: string): string {
+  return (process.env[key] ?? "").trim();
 }
 
-function apiKey(): string {
-  return (process.env.OPENAI_API_KEY ?? process.env.FREEBUFF_API_KEY ?? "").trim();
+/**
+ * An explicit base URL wins. Otherwise Gemini is selected only when it is the
+ * sole configured provider, preserving the existing Freebuff/OpenAI behavior.
+ */
+function activeProvider(): TutorProvider {
+  const configured = env("AI_BASE_URL") || env("OPENAI_BASE_URL");
+  if (configured) {
+    return configured.includes("generativelanguage.googleapis.com") ? "gemini" : "openai";
+  }
+  const hasGemini = Boolean(env("GEMINI_API_KEY"));
+  const hasOpenAI = Boolean(env("OPENAI_API_KEY") || env("FREEBUFF_API_KEY"));
+  return hasGemini && !hasOpenAI ? "gemini" : "openai";
+}
+
+function baseUrl(provider: TutorProvider): string {
+  const configured = env("AI_BASE_URL") || env("OPENAI_BASE_URL");
+  if (configured) return configured.replace(/\/+$/, "");
+  return provider === "gemini" ? GEMINI_BASE_URL : FREEBUFF_BASE_URL;
+}
+
+function apiKey(provider: TutorProvider): string {
+  if (provider === "gemini") {
+    return env("GEMINI_API_KEY") || env("OPENAI_API_KEY") || env("FREEBUFF_API_KEY");
+  }
+  return env("OPENAI_API_KEY") || env("FREEBUFF_API_KEY") || env("GEMINI_API_KEY");
+}
+
+function modelFor(provider: TutorProvider): string {
+  const override = env("TUTOR_MODEL");
+  if (override) return override;
+  if (provider === "gemini") return env("GEMINI_MODEL") || GEMINI_DEFAULT_MODEL;
+  return DEFAULT_MODEL;
 }
 
 export async function POST(request: Request) {
@@ -44,16 +80,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "empty" }, { status: 400 });
   }
 
-  const key = apiKey();
+  const provider = activeProvider();
+  const key = apiKey(provider);
   if (!key) {
     return NextResponse.json({ error: "no_key" }, { status: 503 });
   }
 
-  const model = process.env.TUTOR_MODEL ?? "gpt-4o-mini";
+  const model = modelFor(provider);
 
   let upstream: Response;
   try {
-    upstream = await fetch(`${baseUrl()}/chat/completions`, {
+    upstream = await fetch(`${baseUrl(provider)}/chat/completions`, {
       method: "POST",
       headers: {
         "content-type": "application/json",

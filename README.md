@@ -115,11 +115,18 @@ still run. The workflow lives in `.github/workflows/tone-fixtures.yml`.
 
 ### 3. AI partner
 
-`OPENAI_API_KEY` plus `AI_BASE_URL` (any OpenAI-compatible chat-completions endpoint; the Freebuff API default is
-`https://freebuff.com/api/v1/paid`). `TUTOR_MODEL` defaults to `gpt-4o-mini`.
+Set one provider key:
 
-Create a Freebuff key at **Desktop → Account → Developer API**. The key is read server-side only, in `app/api/tutor/route.ts`.
+- `GEMINI_API_KEY` — uses Gemini's OpenAI-compatible endpoint
+  (`https://generativelanguage.googleapis.com/v1beta/openai`) and `gemini-3.8-flash` by default.
+- `OPENAI_API_KEY` / `FREEBUFF_API_KEY` — uses the Freebuff OpenAI-compatible endpoint by default.
+
+`AI_BASE_URL` (or `OPENAI_BASE_URL`) overrides the endpoint. `TUTOR_MODEL` overrides the model for either provider;
+`GEMINI_MODEL` overrides only the Gemini default. The key is read server-side only, in `app/api/tutor/route.ts`.
 Never put it in the browser.
+
+Create a Freebuff key at **Desktop → Account → Developer API**, or a Gemini key at **Google AI Studio**. For the
+deployed Worker, set the key with `npx wrangler secret put GEMINI_API_KEY` (or `OPENAI_API_KEY`).
 
 Without a key, the tutor screen shows a setup card; the rest of the app keeps working.
 
@@ -172,7 +179,7 @@ from the exercise key, so a lesson looks the same on every device.
 ## Deploy
 
 The app is plain Next.js App Router with two route handlers, so any Node host works (Vercel, Fly, a container). Set the same
-environment variables in the host's secret store — never in the repo. `OPENAI_API_KEY`, `AZURE_SPEECH_KEY` and the other voice
+environment variables in the host's secret store — never in the repo. `GEMINI_API_KEY`, `OPENAI_API_KEY`, `AZURE_SPEECH_KEY` and the other voice
 keys are read only on the server.
 
 If you deploy to an edge/Workers runtime, confirm that `app/api/tts/route.ts` and `app/api/tutor/route.ts` work under that

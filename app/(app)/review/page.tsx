@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRef } from "react";
 import { LessonRunner } from "@/components/LessonRunner";
 import { allCourseLessonIds, courses, getCourse, scriptClass } from "@/lib/content";
 import { dueLexemes, useProgress } from "@/lib/progress";
@@ -9,6 +10,7 @@ import { Icon, cn } from "@/components/ui";
 export default function ReviewPage() {
   const { progress, ready } = useProgress();
   const course = getCourse(progress.active) ?? courses[0];
+  const dueRef = useRef<{ courseId: string; ids: string[] } | null>(null);
 
   if (!ready) {
     return <div className="card h-64 animate-pulse bg-panel/40" />;
@@ -33,7 +35,13 @@ export default function ReviewPage() {
     );
   }
 
-  const due = dueLexemes(progress, Object.keys(course.lexemes));
+  // Freeze the queue for this session so answering a card cannot shrink it mid-run.
+  let dueSession = dueRef.current;
+  if (!dueSession || dueSession.courseId !== course.id) {
+    dueSession = { courseId: course.id, ids: dueLexemes(progress, Object.keys(course.lexemes)) };
+    dueRef.current = dueSession;
+  }
+  const due = dueSession.ids;
 
   return (
     <div>
@@ -59,7 +67,7 @@ export default function ReviewPage() {
           ))}
         </div>
       </div>
-      <LessonRunner courseId={course.id} mode="review" />
+      <LessonRunner courseId={course.id} mode="review" reviewLexemeIds={due} />
     </div>
   );
 }

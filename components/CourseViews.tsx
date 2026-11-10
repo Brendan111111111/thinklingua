@@ -9,6 +9,8 @@ import {
   lessonSummary,
   scriptClass,
   speakingLessonId,
+  speakingLessonTitle,
+  speakingVariantsForUnit,
   tintClass,
   trackLessonIds,
   totalCourseLessons,
@@ -119,6 +121,24 @@ const TRACKS: { id: Track; label: string; hint: string }[] = [
   { id: "read", label: "Reading", hint: "letters and sounds" },
 ];
 
+const TRACK_TONES: Record<Track, string> = { words: "gold", speak: "sakura", read: "sky" };
+
+function MilestoneMarker({ complete, detail, label = "Intermediate milestone" }: { complete: boolean; detail: string; label?: string }) {
+  return (
+    <div className="mb-3 flex items-center gap-3">
+      <div className={cn("h-px flex-1 bg-gradient-to-r from-transparent", complete ? "to-jade/40" : "to-violet/40")} />
+      <Badge tone={complete ? "jade" : "violet"}>
+        <span className="inline-flex items-center gap-1.5">
+          <Icon name="bolt" className="h-3 w-3" />
+          {label}
+        </span>
+      </Badge>
+      <span className="hidden text-[11px] text-muted sm:inline">{detail}</span>
+      <div className={cn("h-px flex-1 bg-gradient-to-l from-transparent", complete ? "to-jade/40" : "to-violet/40")} />
+    </div>
+  );
+}
+
 export function CourseMap({ courseId }: { courseId: string }) {
   const course = getCourse(courseId);
   const { progress } = useProgress();
@@ -143,20 +163,84 @@ export function CourseMap({ courseId }: { courseId: string }) {
   const trackLabels: Record<Track, string> = { words: "Words", speak: "Speaking", read: "Reading" };
   const nextId = ids.find((id) => !progress.completed[id]);
   const nextSummary = nextId ? lessonSummary(course, nextId) : undefined;
-  const totalDone = allCourseLessonIds(course).filter((id) => progress.completed[id]).length;
+  const allIds = allCourseLessonIds(course);
+  const totalDone = allIds.filter((id) => progress.completed[id]).length;
+  const overallPercent = allIds.length === 0 ? 0 : totalDone / allIds.length;
+
+  const milestoneUnitIndex = course.units.findIndex((unit) => unit.stage === "intermediate");
+  const advancedUnitIndex = course.units.findIndex((unit) => unit.stage === "advanced");
+  const masteryUnitIndex = course.units.findIndex((unit) => unit.stage === "mastery");
+  const milestoneReadingIndex = course.reading.findIndex((lesson) => lesson.stage === "intermediate");
+  const advancedReadingIndex = course.reading.findIndex((lesson) => lesson.stage === "advanced");
+  const masteryReadingIndex = course.reading.findIndex((lesson) => lesson.stage === "mastery");
+  const intermediateUnits = course.units.filter((unit) => unit.stage === "intermediate");
+  const advancedUnits = course.units.filter((unit) => unit.stage === "advanced");
+  const masteryUnits = course.units.filter((unit) => unit.stage === "mastery");
+  const intermediateReading = course.reading.filter((lesson) => lesson.stage === "intermediate");
+  const advancedReading = course.reading.filter((lesson) => lesson.stage === "advanced");
+  const masteryReading = course.reading.filter((lesson) => lesson.stage === "mastery");
+  const intermediateSpeakingIds = intermediateUnits.flatMap((unit) => speakingVariantsForUnit(unit).map((variant) => speakingLessonId(unit, variant)));
+  const advancedSpeakingIds = advancedUnits.flatMap((unit) => speakingVariantsForUnit(unit).map((variant) => speakingLessonId(unit, variant)));
+  const masterySpeakingIds = masteryUnits.flatMap((unit) => speakingVariantsForUnit(unit).map((variant) => speakingLessonId(unit, variant)));
+  const milestoneIds = [
+    ...intermediateUnits.flatMap((unit) => unit.lessons.map((lesson) => lesson.id)),
+    ...intermediateReading.map((lesson) => lesson.id),
+    ...intermediateSpeakingIds,
+  ];
+  const advancedIds = [
+    ...advancedUnits.flatMap((unit) => unit.lessons.map((lesson) => lesson.id)),
+    ...advancedReading.map((lesson) => lesson.id),
+    ...advancedSpeakingIds,
+  ];
+  const masteryIds = [
+    ...masteryUnits.flatMap((unit) => unit.lessons.map((lesson) => lesson.id)),
+    ...masteryReading.map((lesson) => lesson.id),
+    ...masterySpeakingIds,
+  ];
+  const milestoneDone = milestoneIds.filter((id) => progress.completed[id]).length;
+  const milestonePercent = milestoneIds.length === 0 ? 0 : milestoneDone / milestoneIds.length;
+  const milestoneUnitsDone = intermediateUnits.filter((unit) => unit.lessons.every((lesson) => progress.completed[lesson.id])).length;
+  const milestoneReadingDone = intermediateReading.filter((lesson) => progress.completed[lesson.id]).length;
+  const milestoneSpeakingDone = intermediateSpeakingIds.filter((id) => progress.completed[id]).length;
+  const milestoneStarted = milestoneDone > 0;
+  const milestoneReached = milestoneIds.length > 0 && milestoneDone === milestoneIds.length;
+  const advancedDone = advancedIds.filter((id) => progress.completed[id]).length;
+  const advancedPercent = advancedIds.length === 0 ? 0 : advancedDone / advancedIds.length;
+  const advancedUnitsDone = advancedUnits.filter((unit) => unit.lessons.every((lesson) => progress.completed[lesson.id])).length;
+  const advancedReadingDone = advancedReading.filter((lesson) => progress.completed[lesson.id]).length;
+  const advancedSpeakingDone = advancedSpeakingIds.filter((id) => progress.completed[id]).length;
+  const advancedStarted = advancedDone > 0;
+  const advancedReached = advancedIds.length > 0 && advancedDone === advancedIds.length;
+  const masteryDone = masteryIds.filter((id) => progress.completed[id]).length;
+  const masteryPercent = masteryIds.length === 0 ? 0 : masteryDone / masteryIds.length;
+  const masteryUnitsDone = masteryUnits.filter((unit) => unit.lessons.every((lesson) => progress.completed[lesson.id])).length;
+  const masteryReadingDone = masteryReading.filter((lesson) => progress.completed[lesson.id]).length;
+  const masterySpeakingDone = masterySpeakingIds.filter((id) => progress.completed[id]).length;
+  const masteryStarted = masteryDone > 0;
+  const masteryReached = masteryIds.length > 0 && masteryDone === masteryIds.length;
 
   return (
     <div>
-      <Link href="/learn" className="inline-flex items-center gap-2 text-xs text-muted transition hover:text-cream">
-        <Icon name="arrow" className="h-3.5 w-3.5 rotate-180" />
-        All courses
-      </Link>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link href="/learn" className="inline-flex items-center gap-2 text-xs text-muted transition hover:text-cream">
+          <Icon name="arrow" className="h-3.5 w-3.5 rotate-180" />
+          All courses
+        </Link>
+        <Link
+          href={`/learn/${course.id}/placement`}
+          className="inline-flex items-center gap-1.5 rounded-full border border-violet/35 bg-violet/10 px-3 py-1.5 text-[11px] font-semibold text-violet transition hover:border-violet/60 hover:bg-violet/15"
+        >
+          <Icon name="bolt" className="h-3.5 w-3.5" />
+          {progress.placement?.[course.id] ? "Retake placement" : "Placement test"}
+        </Link>
+      </div>
 
       <header className="mt-4 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
             <span className="text-2xl">{course.flag}</span>
             <Badge tone={course.primary ? "jade" : "muted"}>{course.primary ? "flagship" : "same method"}</Badge>
+            {progress.placement?.[course.id] ? <Badge tone="violet">placed at intermediate</Badge> : null}
           </div>
           <h1 className={cn("mt-2 font-display text-4xl font-semibold tracking-tight", scriptClass[course.id])}>{course.name}</h1>
           <p className={cn("mt-1 text-lg text-cream/80", scriptClass[course.id])}>{course.tagline}</p>
@@ -179,6 +263,116 @@ export function CourseMap({ courseId }: { courseId: string }) {
           </div>
         </div>
       </header>
+
+      <section className="mt-6 grid gap-3 lg:grid-cols-[1.35fr_1fr]">
+        <div className="rounded-3xl border border-line/70 bg-panel/40 p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-muted">Progress summary</p>
+              <p className="mt-1 font-display text-2xl font-semibold">
+                {totalDone}
+                <span className="text-base font-normal text-muted"> / {allIds.length}</span>
+              </p>
+              <p className="text-xs text-muted">lessons complete across all three tracks</p>
+            </div>
+            <span className="rounded-2xl border border-jade/30 bg-jade/10 px-3 py-2 text-right">
+              <span className="block font-display text-xl font-semibold text-jade">{Math.round(overallPercent * 100)}%</span>
+              <span className="text-[10px] uppercase tracking-wide text-muted">course</span>
+            </span>
+          </div>
+          <div className="mt-4 grid gap-2 sm:grid-cols-3">
+            {TRACKS.map((option) => {
+              const summaryIds = trackLessonIds(course, option.id);
+              const summaryDone = summaryIds.filter((id) => progress.completed[id]).length;
+              const summaryPercent = summaryIds.length === 0 ? 0 : summaryDone / summaryIds.length;
+              return (
+                <div key={option.id} className="rounded-2xl border border-line/60 bg-ink/20 p-3">
+                  <div className="flex items-center justify-between gap-2 text-[11px]">
+                    <span className="font-semibold text-cream">{option.label}</span>
+                    <span className="text-muted">{summaryDone}/{summaryIds.length}</span>
+                  </div>
+                  <ProgressBar className="mt-2" value={summaryPercent} tone={TRACK_TONES[option.id]} />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className={cn("relative overflow-hidden rounded-3xl border p-5", milestoneReached ? "border-jade/40 bg-jade/[0.07]" : "border-violet/30 bg-violet/[0.07]")}>
+          <div className={cn("pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full blur-2xl", milestoneReached ? "bg-jade/20" : "bg-violet/20")} />
+          <div className="relative">
+            <div className="flex items-center justify-between gap-3">
+              <span className={cn("grid h-9 w-9 place-items-center rounded-xl border", milestoneReached ? "border-jade/40 bg-jade/15 text-jade" : "border-violet/40 bg-violet/15 text-violet")}>
+                <Icon name="bolt" className="h-4 w-4" />
+              </span>
+              <Badge tone={milestoneReached ? "jade" : "violet"}>
+                {milestoneReached ? "reached" : milestoneStarted ? "in progress" : "up next"}
+              </Badge>
+            </div>
+            <p className={cn("mt-3 text-[11px] uppercase tracking-[0.2em]", milestoneReached ? "text-jade" : "text-violet")}>Intermediate milestone</p>
+            <p className="mt-1 font-display text-xl font-semibold">The deeper half of the course.</p>
+            <p className="mt-1 text-xs text-muted">
+              Finish the final units, the second reading stretch, and its speaking reviews.
+            </p>
+            <div className="mt-4 grid grid-cols-3 gap-2 text-[11px] text-muted">
+              <span><strong className="text-cream">{milestoneUnitsDone}/{intermediateUnits.length}</strong> units</span>
+              <span><strong className="text-cream">{milestoneReadingDone}/{intermediateReading.length}</strong> reading</span>
+              <span><strong className="text-cream">{milestoneSpeakingDone}/{intermediateSpeakingIds.length}</strong> speaking</span>
+            </div>
+            <ProgressBar className="mt-3" value={milestonePercent} tone={milestoneReached ? "jade" : "violet"} />
+          </div>
+        </div>
+      </section>
+
+      <section className="mt-3">
+        <div className={cn("relative overflow-hidden rounded-3xl border p-5", advancedReached ? "border-jade/40 bg-jade/[0.07]" : "border-gold/30 bg-gold/[0.06]")}>
+          <div className={cn("pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full blur-2xl", advancedReached ? "bg-jade/20" : "bg-gold/20")} />
+          <div className="relative flex flex-wrap items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className={cn("grid h-9 w-9 place-items-center rounded-xl border", advancedReached ? "border-jade/40 bg-jade/15 text-jade" : "border-gold/40 bg-gold/15 text-gold")}>
+                <Icon name="bolt" className="h-4 w-4" />
+              </span>
+              <div>
+                <p className={cn("text-[11px] uppercase tracking-[0.2em]", advancedReached ? "text-jade" : "text-gold")}>Advanced milestone</p>
+                <p className="mt-1 font-display text-xl font-semibold">The final stretch.</p>
+              </div>
+            </div>
+            <Badge tone={advancedReached ? "jade" : "gold"}>{advancedReached ? "reached" : advancedStarted ? "in progress" : "up next"}</Badge>
+          </div>
+          <p className="mt-3 max-w-2xl text-xs text-muted">Finish the advanced units, the third reading set, and its speaking reviews.</p>
+          <div className="mt-4 grid grid-cols-3 gap-2 text-[11px] text-muted sm:max-w-lg">
+            <span><strong className="text-cream">{advancedUnitsDone}/{advancedUnits.length}</strong> units</span>
+            <span><strong className="text-cream">{advancedReadingDone}/{advancedReading.length}</strong> reading</span>
+            <span><strong className="text-cream">{advancedSpeakingDone}/{advancedSpeakingIds.length}</strong> speaking</span>
+          </div>
+          <ProgressBar className="mt-3" value={advancedPercent} tone={advancedReached ? "jade" : "gold"} />
+        </div>
+      </section>
+
+      <section className="mt-3">
+        <div className={cn("relative overflow-hidden rounded-3xl border p-5", masteryReached ? "border-jade/40 bg-jade/[0.07]" : "border-sakura/30 bg-sakura/[0.06]")}>
+          <div className={cn("pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full blur-2xl", masteryReached ? "bg-jade/20" : "bg-sakura/20")} />
+          <div className="relative flex flex-wrap items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className={cn("grid h-9 w-9 place-items-center rounded-xl border", masteryReached ? "border-jade/40 bg-jade/15 text-jade" : "border-sakura/40 bg-sakura/15 text-sakura")}>
+                <Icon name="bolt" className="h-4 w-4" />
+              </span>
+              <div>
+                <p className={cn("text-[11px] uppercase tracking-[0.2em]", masteryReached ? "text-jade" : "text-sakura")}>Mastery milestone</p>
+                <p className="mt-1 font-display text-xl font-semibold">The summit.</p>
+              </div>
+            </div>
+            <Badge tone={masteryReached ? "jade" : "sakura"}>{masteryReached ? "reached" : masteryStarted ? "in progress" : "up next"}</Badge>
+          </div>
+          <p className="mt-3 max-w-2xl text-xs text-muted">Finish the mastery units, the fourth reading set, and its six speaking passes.</p>
+          <div className="mt-4 grid grid-cols-3 gap-2 text-[11px] text-muted sm:max-w-lg">
+            <span><strong className="text-cream">{masteryUnitsDone}/{masteryUnits.length}</strong> units</span>
+            <span><strong className="text-cream">{masteryReadingDone}/{masteryReading.length}</strong> reading</span>
+            <span><strong className="text-cream">{masterySpeakingDone}/{masterySpeakingIds.length}</strong> speaking</span>
+          </div>
+          <ProgressBar className="mt-3" value={masteryPercent} tone={masteryReached ? "jade" : "sakura"} />
+        </div>
+      </section>
 
       <div className="mt-6 grid gap-2 rounded-3xl border border-line/70 bg-panel/40 p-2 sm:grid-cols-3">
         {TRACKS.map((option) => {
@@ -232,12 +426,39 @@ export function CourseMap({ courseId }: { courseId: string }) {
           {course.units.map((unit, unitIndex) => {
             const unitTint = tintClass[unit.tint];
             return (
-              <section key={unit.id}>
+              <div key={unit.id}>
+                {unitIndex === milestoneUnitIndex && (
+                  <MilestoneMarker
+                    label="Intermediate milestone"
+                    complete={milestoneUnitsDone === intermediateUnits.length}
+                    detail={`${milestoneUnitsDone}/${intermediateUnits.length} units done`}
+                  />
+                )}
+                {unitIndex === advancedUnitIndex && (
+                  <MilestoneMarker
+                    label="Advanced milestone"
+                    complete={advancedUnitsDone === advancedUnits.length}
+                    detail={`${advancedUnitsDone}/${advancedUnits.length} units done`}
+                  />
+                )}
+                {unitIndex === masteryUnitIndex && (
+                  <MilestoneMarker
+                    label="Mastery milestone"
+                    complete={masteryUnitsDone === masteryUnits.length}
+                    detail={`${masteryUnitsDone}/${masteryUnits.length} units done`}
+                  />
+                )}
+                <section>
                 <div className="mb-3 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <span className={cn("grid h-11 w-11 place-items-center rounded-2xl border bg-panel/60 text-xl", unitTint.border)}>{unit.glyph}</span>
                     <div>
-                      <h2 className={cn("font-display text-lg font-semibold", scriptClass[course.id])}>{unit.title}</h2>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className={cn("font-display text-lg font-semibold", scriptClass[course.id])}>{unit.title}</h2>
+                        {unit.stage === "intermediate" && <Badge tone="violet">intermediate</Badge>}
+                        {unit.stage === "advanced" && <Badge tone="gold">advanced</Badge>}
+                        {unit.stage === "mastery" && <Badge tone="sakura">mastery</Badge>}
+                      </div>
                       <p className="text-[11px] uppercase tracking-wide text-muted">
                         Unit {unitIndex + 1} · {unit.latin}
                       </p>
@@ -279,7 +500,13 @@ export function CourseMap({ courseId }: { courseId: string }) {
                           <p className={cn("truncate font-medium", scriptClass[course.id])}>{lesson.title}</p>
                           <p className="truncate text-[11px] text-muted">
                             {lesson.latin}
-                            {record ? ` · best ${record.best}%` : lesson.kind === "checkpoint" ? " · unit review" : ""}
+                            {record
+                              ? record.skipped
+                                ? " · placed"
+                                : ` · best ${record.best}%`
+                              : lesson.kind === "checkpoint"
+                                ? " · unit review"
+                                : ""}
                           </p>
                         </div>
                         {isNext && <Badge tone="jade">next</Badge>}
@@ -288,7 +515,8 @@ export function CourseMap({ courseId }: { courseId: string }) {
                     );
                   })}
                 </div>
-              </section>
+                </section>
+              </div>
             );
           })}
         </div>
@@ -301,35 +529,37 @@ export function CourseMap({ courseId }: { courseId: string }) {
             Say each word out loud. The app listens through your microphone and scores the attempt — no multiple choice here.
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            {course.units.map((unit) => {
-              const id = speakingLessonId(unit);
-              const record = progress.completed[id];
-              const wordCount = unit.lessons.reduce((total, lesson) => total + lesson.newLexemes.length, 0);
-              return (
-                <Link
-                  key={id}
-                  href={`/learn/${course.id}/${id}`}
-                  className={cn(
-                    "card-soft group p-5 transition hover:-translate-y-0.5 hover:border-jade/40",
-                    record ? "border-jade/25" : "border-line/70",
-                  )}
-                >
-                  <div className="flex items-start justify-between">
-                    <span className="grid h-11 w-11 place-items-center rounded-2xl border border-line/70 bg-ink/40 text-xl">{unit.glyph}</span>
-                    {record ? <Badge tone="jade">best {record.best}%</Badge> : <Badge tone="muted">not yet</Badge>}
-                  </div>
-                  <p className={cn("mt-3 font-display text-lg font-semibold", scriptClass[course.id])}>{unit.title}</p>
-                  <p className="text-[11px] uppercase tracking-wide text-muted">{unit.latin} · speaking</p>
-                  <p className="mt-2 text-xs text-muted">
-                    {wordCount} words and two sentences from this unit. Native audio first, then your turn.
-                  </p>
-                  <p className="mt-3 flex items-center gap-1.5 text-[11px] text-jade">
-                    <Icon name="mic" className="h-3.5 w-3.5" />
-                    {record ? "Practise again" : "Start speaking"}
-                  </p>
-                </Link>
-              );
-            })}
+            {course.units.flatMap((unit) =>
+              speakingVariantsForUnit(unit).map((variant) => {
+                const id = speakingLessonId(unit, variant);
+                const record = progress.completed[id];
+                const wordCount = new Set(unit.lessons.flatMap((lesson) => lesson.newLexemes)).size;
+                return (
+                  <Link
+                    key={id}
+                    href={`/learn/${course.id}/${id}`}
+                    className={cn(
+                      "card-soft group p-5 transition hover:-translate-y-0.5 hover:border-jade/40",
+                      record ? "border-jade/25" : "border-line/70",
+                    )}
+                  >
+                    <div className="flex items-start justify-between">
+                      <span className="grid h-11 w-11 place-items-center rounded-2xl border border-line/70 bg-ink/40 text-xl">{unit.glyph}</span>
+                      {record ? <Badge tone="jade">best {record.best}%</Badge> : <Badge tone="muted">not yet</Badge>}
+                    </div>
+                    <p className={cn("mt-3 font-display text-lg font-semibold", scriptClass[course.id])}>{speakingLessonTitle(course, unit, variant)}</p>
+                    <p className="text-[11px] uppercase tracking-wide text-muted">{unit.latin} · speaking{variant === 1 ? " review" : variant > 1 ? ` review ${variant}` : ""}</p>
+                    <p className="mt-2 text-xs text-muted">
+                      {wordCount} words and two sentences from this unit. Native audio first, then your turn.
+                    </p>
+                    <p className="mt-3 flex items-center gap-1.5 text-[11px] text-jade">
+                      <Icon name="mic" className="h-3.5 w-3.5" />
+                      {record ? "Practise again" : "Start speaking"}
+                    </p>
+                  </Link>
+                );
+              }),
+            )}
           </div>
         </div>
       )}
@@ -344,14 +574,35 @@ export function CourseMap({ courseId }: { courseId: string }) {
             {course.reading.map((lesson, index) => {
               const record = progress.completed[lesson.id];
               return (
-                <Link
-                  key={lesson.id}
-                  href={`/learn/${course.id}/${lesson.id}`}
-                  className={cn(
-                    "group flex items-start gap-4 rounded-2xl border p-4 transition",
-                    record ? "border-line/60 bg-panel/40" : "border-line/80 bg-panel/60 hover:border-jade/40",
+                <div key={lesson.id}>
+                  {index === milestoneReadingIndex && (
+                    <MilestoneMarker
+                      label="Intermediate milestone"
+                      complete={milestoneReadingDone === intermediateReading.length}
+                      detail={`${milestoneReadingDone}/${intermediateReading.length} reading lessons done`}
+                    />
                   )}
-                >
+                  {index === advancedReadingIndex && (
+                    <MilestoneMarker
+                      label="Advanced milestone"
+                      complete={advancedReadingDone === advancedReading.length}
+                      detail={`${advancedReadingDone}/${advancedReading.length} reading lessons done`}
+                    />
+                  )}
+                  {index === masteryReadingIndex && (
+                    <MilestoneMarker
+                      label="Mastery milestone"
+                      complete={masteryReadingDone === masteryReading.length}
+                      detail={`${masteryReadingDone}/${masteryReading.length} reading lessons done`}
+                    />
+                  )}
+                  <Link
+                    href={`/learn/${course.id}/${lesson.id}`}
+                    className={cn(
+                      "group flex items-start gap-4 rounded-2xl border p-4 transition",
+                      record ? "border-line/60 bg-panel/40" : "border-line/80 bg-panel/60 hover:border-jade/40",
+                    )}
+                  >
                   <span className={cn("grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-line bg-ink/40 text-lg", scriptClass[course.id])}>
                     {lesson.title.slice(0, 1)}
                   </span>
@@ -369,7 +620,8 @@ export function CourseMap({ courseId }: { courseId: string }) {
                     </p>
                   </div>
                   <Icon name="arrow" className="mt-2 h-4 w-4 shrink-0 text-muted transition group-hover:text-cream" />
-                </Link>
+                  </Link>
+                </div>
               );
             })}
           </div>

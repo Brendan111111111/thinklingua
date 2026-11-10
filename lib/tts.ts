@@ -15,6 +15,7 @@ const VOICES: Record<string, LanguageVoice> = {
   "ja-JP": { azure: "ja-JP-NanamiNeural", google: "ja-JP-Neural2-B" },
   "es-ES": { azure: "es-ES-ElviraNeural", google: "es-ES-Neural2-A" },
   "fr-FR": { azure: "fr-FR-DeniseNeural", google: "fr-FR-Neural2-A" },
+  "ru-RU": { azure: "ru-RU-SvetlanaNeural", google: "ru-RU-Wavenet-A" },
 };
 
 function env(key: string): string {

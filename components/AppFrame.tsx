@@ -33,6 +33,7 @@ export function AppFrame({ children }: { children: React.ReactNode }) {
   }, []);
 
   const course = getCourse(progress.active) ?? courses[0];
+  const glyph = course.id === "ja" ? "あ" : course.id === "th" ? "ก" : course.id === "ru" ? "Я" : "A";
   const level = levelFor(progress.xp);
   const hearts = heartsNow(progress);
 
@@ -46,7 +47,7 @@ export function AppFrame({ children }: { children: React.ReactNode }) {
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[258px] flex-col border-r border-line/60 bg-ink2/80 px-5 py-6 backdrop-blur-xl lg:flex">
         <Link href="/" className="group flex items-center gap-3">
           <span className="grid h-10 w-10 place-items-center rounded-2xl bg-gradient-to-br from-jade via-emerald-300 to-gold text-lg font-bold text-ink shadow-[0_10px_30px_-14px_rgba(61,224,174,0.8)]">
-            <span className={scriptClass[course.id]}>{course.id === "ja" ? "あ" : course.id === "th" ? "ก" : "A"}</span>
+            <span className={scriptClass[course.id]}>{glyph}</span>
           </span>
           <span className="leading-tight">
             <span className="block font-display text-[17px] font-semibold tracking-tight">ThinkLingua</span>
@@ -123,7 +124,7 @@ export function AppFrame({ children }: { children: React.ReactNode }) {
         <div className="flex items-center justify-between px-4 py-3">
           <Link href="/" className="flex items-center gap-2">
             <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-jade to-gold text-sm font-bold text-ink">
-              <span className={scriptClass[course.id]}>{course.id === "ja" ? "あ" : course.id === "th" ? "ก" : "A"}</span>
+              <span className={scriptClass[course.id]}>{glyph}</span>
             </span>
             <span className="font-display text-[15px] font-semibold">ThinkLingua</span>
           </Link>

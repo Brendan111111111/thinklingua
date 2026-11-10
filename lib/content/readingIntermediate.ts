@@ -1,4 +1,5 @@
 import type { LangId, ReadingLesson, ReadingSymbol } from "./types";
+import { russianIntermediateReading } from "./russianReading";
 
 const S = (
   glyph: string,
@@ -288,4 +289,5 @@ export const intermediateReadingByLanguage: Record<LangId, ReadingLesson[]> = {
   ja: [],
   es: spanishIntermediateReading,
   fr: frenchIntermediateReading,
+  ru: russianIntermediateReading,
 };

@@ -182,7 +182,7 @@ export function ProgressDashboard() {
                     {done}/{ids.length}
                   </span>
                 </div>
-                <ProgressBar value={percent} className="mt-1.5 h-1.5" tone={option.id === "ja" ? "sakura" : option.id === "th" ? "gold" : "violet"} />
+                <ProgressBar value={percent} className="mt-1.5 h-1.5" tone={option.id === "ja" ? "sakura" : option.id === "th" ? "gold" : option.id === "ru" ? "sky" : "violet"} />
               </Link>
             );
           })}
@@ -201,7 +201,7 @@ export function ProgressDashboard() {
             {progress.stats.earCorrect}
             <span className="text-base text-muted">/{progress.stats.ear}</span>
           </p>
-          <p className="mt-1 text-xs text-muted">tone and mora perception</p>
+          <p className="mt-1 text-xs text-muted">sound contrasts and minimal pairs</p>
         </div>
         <div className="card p-5">
           <p className="text-[11px] uppercase tracking-wide text-muted">Peeks</p>

@@ -1,5 +1,5 @@
 /** Four-letter-ish course ids. Thai and Japanese are the primary courses. */
-export type LangId = "th" | "ja" | "es" | "fr";
+export type LangId = "th" | "ja" | "es" | "fr" | "ru";
 
 /**
  * A single meaning-bearing unit. `glyph` is the concept anchor: the learner

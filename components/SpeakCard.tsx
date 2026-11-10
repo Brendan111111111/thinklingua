@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { scorePronunciation, verdictCopy, SPEECH_PASS, type SpeechScore, type SpeechVerdict } from "@/lib/speechScore";
+import { bestSpeechMatch, scorePronunciation, verdictCopy, SPEECH_PASS, type SpeechScore, type SpeechVerdict } from "@/lib/speechScore";
 import { isEmbedded, requestMicrophone, startRecording, type MicCheck, type RecordedClip, type Recording } from "@/lib/mic";
 import { canRecognise, listenOnce, stopSpeaking } from "@/lib/speech";
 import { analyseAttempt, pitchSupported, referenceContour } from "@/lib/pitchClient";
@@ -11,6 +11,7 @@ import { SpeakButton } from "./SpeakButton";
 
 type Props = {
   text: string;
+  reading?: string;
   latin: string;
   gloss: string;
   glyph: string;
@@ -26,10 +27,13 @@ type Phase = "idle" | "checking" | "listening" | "analysing" | "recording" | "re
 type Contours = { user: number[] | null; reference: number[] | null };
 
 function verdictFor(score: number): SpeechVerdict {
-  return score >= 80 ? "clear" : score >= SPEECH_PASS ? "close" : "retry";
+  return score >= 90 ? "clear" : score >= SPEECH_PASS ? "close" : "retry";
 }
 
-export function SpeakCard({ text, latin, gloss, glyph, tone, locale, rate, locked, onGraded }: Props) {
+/** A measured Thai tone line below this cannot pass on words alone. */
+const MELODY_PASS = 45;
+
+export function SpeakCard({ text, reading, latin, gloss, glyph, tone, locale, rate, locked, onGraded }: Props) {
   const pitched = pitchSupported(locale);
   const [phase, setPhase] = useState<Phase>("idle");
   const [heard, setHeard] = useState("");
@@ -95,12 +99,14 @@ export function SpeakCard({ text, latin, gloss, glyph, tone, locale, rate, locke
     setPhase("blocked");
   }
 
-  async function finish(transcript: string) {
+  async function finish(transcript: string, alternatives: string[] = []) {
     if (settledRef.current) return;
     settledRef.current = true;
 
-    const wordResult = scorePronunciation(transcript, text);
-    setHeard(transcript);
+    const targets = [text, reading].filter((value): value is string => Boolean(value));
+    const match = bestSpeechMatch([transcript, ...alternatives], targets, locale);
+    const wordResult = match?.result ?? scorePronunciation(transcript, targets, locale);
+    setHeard(match?.transcript ?? transcript);
     setWords(wordResult);
     setPhase("analysing");
 
@@ -119,13 +125,17 @@ export function SpeakCard({ text, latin, gloss, glyph, tone, locale, rate, locke
 
     const combined =
       melodyValue === null ? wordResult.score : Math.round(wordResult.score * 0.6 + melodyValue * 0.4);
+    // Thai tone is part of the word, not a bonus. A bad measured contour must
+    // not be rescued by a recogniser transcript that omits tone marks.
+    const toneFailed = pitched && melodyValue !== null && melodyValue < MELODY_PASS;
+    const finalScore = toneFailed ? Math.min(combined, SPEECH_PASS - 1) : combined;
 
     setMelody(melodyValue);
     setContours(pair);
     setTones(syllableResult);
-    setOverall(combined);
+    setOverall(finalScore);
     setPhase("scored");
-    onGraded(combined >= SPEECH_PASS, combined);
+    onGraded(finalScore >= SPEECH_PASS, finalScore);
   }
 
   async function begin() {
@@ -176,9 +186,9 @@ export function SpeakCard({ text, latin, gloss, glyph, tone, locale, rate, locke
     setPhase("listening");
     stopRef.current = listenOnce(
       locale,
-      (transcript) => {
+      (transcript, alternatives) => {
         stopRef.current = null;
-        void finish(transcript);
+        void finish(transcript, alternatives);
       },
       () => {
         if (!settledRef.current) setPhase("idle");
@@ -267,7 +277,7 @@ export function SpeakCard({ text, latin, gloss, glyph, tone, locale, rate, locke
 
       <div className="mt-6 flex flex-col items-center gap-3 text-center">
         <span className="text-5xl">{glyph}</span>
-        <p className={cn("text-3xl font-semibold", locale.startsWith("th") ? "script-th" : locale.startsWith("ja") ? "script-ja" : "")}>
+        <p className={cn("text-3xl font-semibold", locale.startsWith("th") ? "script-th" : locale.startsWith("ja") ? "script-ja" : locale.startsWith("ru") ? "script-ru" : "")}>
           {text}
         </p>
         <p className="text-[11px] uppercase tracking-wide text-muted">

@@ -16,6 +16,7 @@ const OPENERS: Record<LangId, string> = {
   ja: "こんにちは、あおいです。今日はどうでしたか。",
   es: "¡Hola! Soy Lucía. ¿Cómo estás hoy?",
   fr: "Salut ! Moi c'est Camille. Comment ça va aujourd'hui ?",
+  ru: "Привет! Меня зовут Даша. Как ты сегодня?",
 };
 
 export function TutorChat() {

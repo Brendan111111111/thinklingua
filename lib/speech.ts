@@ -1,5 +1,7 @@
 "use client";
 
+import { bestSpeechMatch, SPEECH_PASS } from "./speechScore";
+
 /**
  * Voice playback.
  *
@@ -214,6 +216,9 @@ export async function loadEngine(): Promise<EngineInfo> {
 }
 
 /* ── speech recognition (optional, used by shadowing) ──────────────────── */
+type RecognitionAlternative = { transcript: string };
+type RecognitionResult = ArrayLike<RecognitionAlternative> & { isFinal?: boolean };
+type RecognitionEvent = { results: ArrayLike<RecognitionResult> };
 type Recognizer = {
   lang: string;
   interimResults: boolean;
@@ -221,7 +226,7 @@ type Recognizer = {
   continuous: boolean;
   start: () => void;
   stop: () => void;
-  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal?: boolean }> }) => void) | null;
+  onresult: ((event: RecognitionEvent) => void) | null;
   onerror: ((event: { error?: string }) => void) | null;
   onend: (() => void) | null;
 };
@@ -234,7 +239,7 @@ export function canRecognise(): boolean {
 
 export function listenOnce(
   locale: string,
-  onResult: (transcript: string) => void,
+  onResult: (transcript: string, alternatives: string[]) => void,
   onDone: () => void,
   onError?: (code: string) => void,
   onPartial?: (transcript: string) => void,
@@ -247,7 +252,9 @@ export function listenOnce(
   const recognizer = new Ctor();
   recognizer.lang = locale;
   recognizer.interimResults = Boolean(onPartial);
-  recognizer.maxAlternatives = 1;
+  // A single recogniser guess is often the wrong homophone or a different
+  // inflection. Ask for several so the scorer can keep the best match.
+  recognizer.maxAlternatives = 5;
   recognizer.continuous = false;
 
   let finished = false;
@@ -259,12 +266,27 @@ export function listenOnce(
   };
 
   recognizer.onresult = (event) => {
-    const result = event.results?.[0];
-    const transcript = result?.[0]?.transcript ?? "";
+    const results = Array.from(event.results ?? []);
+    if (results.length === 0) return;
+
+    // Chrome can split one utterance into several result segments. Join them
+    // instead of scoring only the first fragment of the sentence.
+    const transcript = results.map((result) => result[0]?.transcript ?? "").join(" ").trim();
+    const alternativeCount = Math.max(1, ...results.map((result) => result.length));
+    const alternatives = [...new Set(
+      Array.from({ length: alternativeCount }, (_, index) =>
+        results
+          .map((result) => result[index]?.transcript ?? result[0]?.transcript ?? "")
+          .join(" ")
+          .trim(),
+      ).filter(Boolean),
+    )];
+
     onPartial?.(transcript);
-    if (!delivered && (!onPartial || result?.isFinal)) {
+    const final = results.every((result) => result.isFinal !== false);
+    if (!delivered && (!onPartial || final)) {
       delivered = true;
-      onResult(transcript);
+      onResult(transcript, alternatives);
     }
   };
   recognizer.onerror = (event) => {
@@ -290,27 +312,7 @@ export function listenOnce(
   };
 }
 
-/** Loose comparison so a good attempt with a stray particle still counts. */
-export function soundsClose(heard: string, target: string): boolean {
-  const normalise = (value: string) =>
-    value
-      .toLowerCase()
-      .replace(/[\s\p{P}\p{S}]/gu, "")
-      .trim();
-  const a = normalise(heard);
-  const b = normalise(target);
-  if (!a || !b) return false;
-  if (a === b || a.includes(b) || b.includes(a)) return true;
-  const grams = (value: string) => {
-    const set = new Set<string>();
-    for (let i = 0; i < value.length - 1; i += 1) set.add(value.slice(i, i + 2));
-    return set;
-  };
-  const ga = grams(a);
-  const gb = grams(b);
-  let overlap = 0;
-  ga.forEach((gram) => {
-    if (gb.has(gram)) overlap += 1;
-  });
-  return overlap / Math.max(1, Math.min(ga.size, gb.size)) >= 0.4;
+/** Keep shadow feedback on the same calibrated scale as the speaking cards. */
+export function soundsClose(heard: string, target: string | string[], locale = ""): boolean {
+  return (bestSpeechMatch(heard, target, locale)?.result.score ?? 0) >= SPEECH_PASS;
 }

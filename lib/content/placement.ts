@@ -276,4 +276,70 @@ const french: PlacementTest = {
   ],
 };
 
-export const placementTests: Partial<Record<LangId, PlacementTest>> = { th: thai, ja: japanese, es: spanish, fr: french };
+const russian: PlacementTest = {
+  passScore: 8,
+  questions: [
+    {
+      id: "ru.place.1",
+      prompt: "Как сказать «hello»?",
+      options: ["Спасибо", "Привет", "До свидания", "Пожалуйста"],
+      answer: 1,
+    },
+    {
+      id: "ru.place.2",
+      prompt: "«Спасибо» means:",
+      options: ["Thank you", "Please", "Hello", "Goodbye"],
+      answer: 0,
+    },
+    {
+      id: "ru.place.3",
+      prompt: "Which sentence means “I want water”?",
+      options: ["Я пью воду", "Я хочу воду", "Я ем воду", "Это вода"],
+      answer: 1,
+    },
+    {
+      id: "ru.place.4",
+      prompt: "«Яблоко вкусное» means:",
+      options: ["The apple is big", "The apple is delicious", "I want an apple", "The table is small"],
+      answer: 1,
+    },
+    {
+      id: "ru.place.5",
+      prompt: "Complete: «Мой ___ большой.»",
+      options: ["дом", "стол", "стул", "вода"],
+      answer: 0,
+    },
+    {
+      id: "ru.place.6",
+      prompt: "«Завтра я работаю дома» means:",
+      options: ["Today I work at home", "Tomorrow I work at home", "Now I drink coffee", "I want a small chair"],
+      answer: 1,
+    },
+    {
+      id: "ru.place.7",
+      prompt: "Which word means “cheese”?",
+      options: ["курица", "хлеб", "сыр", "кофе"],
+      answer: 2,
+    },
+    {
+      id: "ru.place.8",
+      prompt: "Which sentence means “I drink coffee”?",
+      options: ["Я ем кофе", "Я хочу кофе", "Я пью кофе", "Это кофе"],
+      answer: 2,
+    },
+    {
+      id: "ru.place.9",
+      prompt: "«Стол маленький» means:",
+      options: ["The table is big", "The chair is small", "The house is small", "The table is small"],
+      answer: 3,
+    },
+    {
+      id: "ru.place.10",
+      prompt: "Complete: «Я ___ кофе.»",
+      options: ["пью", "ем", "это", "и"],
+      answer: 0,
+    },
+  ],
+};
+
+export const placementTests: Partial<Record<LangId, PlacementTest>> = { th: thai, ja: japanese, es: spanish, fr: french, ru: russian };

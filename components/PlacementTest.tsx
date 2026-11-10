@@ -17,7 +17,7 @@ export function PlacementTest({ courseId }: { courseId: string }) {
   if (!course || !test) {
     return (
       <div className="card mx-auto max-w-xl p-8 text-center">
-        <p>Placement tests are available for all four courses.</p>
+        <p>Placement tests are available for every course.</p>
         <Link href="/learn" className="btn btn-primary mt-5 px-6 py-3">
           All courses
         </Link>

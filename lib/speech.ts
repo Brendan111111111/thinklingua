@@ -221,7 +221,7 @@ type Recognizer = {
   continuous: boolean;
   start: () => void;
   stop: () => void;
-  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal?: boolean }> }) => void) | null;
   onerror: ((event: { error?: string }) => void) | null;
   onend: (() => void) | null;
 };
@@ -237,6 +237,7 @@ export function listenOnce(
   onResult: (transcript: string) => void,
   onDone: () => void,
   onError?: (code: string) => void,
+  onPartial?: (transcript: string) => void,
 ): (() => void) | null {
   if (typeof window === "undefined") return null;
   const w = window as unknown as { SpeechRecognition?: new () => Recognizer; webkitSpeechRecognition?: new () => Recognizer };
@@ -245,11 +246,12 @@ export function listenOnce(
 
   const recognizer = new Ctor();
   recognizer.lang = locale;
-  recognizer.interimResults = false;
+  recognizer.interimResults = Boolean(onPartial);
   recognizer.maxAlternatives = 1;
   recognizer.continuous = false;
 
   let finished = false;
+  let delivered = false;
   const done = () => {
     if (finished) return;
     finished = true;
@@ -257,8 +259,13 @@ export function listenOnce(
   };
 
   recognizer.onresult = (event) => {
-    const transcript = event.results?.[0]?.[0]?.transcript ?? "";
-    onResult(transcript);
+    const result = event.results?.[0];
+    const transcript = result?.[0]?.transcript ?? "";
+    onPartial?.(transcript);
+    if (!delivered && (!onPartial || result?.isFinal)) {
+      delivered = true;
+      onResult(transcript);
+    }
   };
   recognizer.onerror = (event) => {
     onError?.(event?.error ?? "unknown");

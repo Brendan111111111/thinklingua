@@ -126,7 +126,7 @@ export function SettingsPanel() {
         />
         <Toggle
           label="Play audio automatically"
-          detail="Hear every new word the moment it appears."
+          detail="Hear new words and tutor replies the moment they appear."
           checked={progress.settings.autoPlay}
           onChange={(value) => saveSettings({ autoPlay: value })}
         />

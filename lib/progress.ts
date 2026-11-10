@@ -8,7 +8,7 @@ export const HEART_REFILL_MS = 5 * 60 * 1000;
 const STORE_KEY = "thinklingua.v1";
 
 export type DayStat = { xp: number; lessons: number; answers: number; perfect: number };
-export type Settings = { rate: number; latin: boolean; autoPlay: boolean; voice: string };
+export type Settings = { rate: number; latin: boolean; autoPlay: boolean; handsFree: boolean; voice: string };
 export type Card = { id: string; due: number; interval: number; ease: number; lapses: number };
 
 export type Progress = {
@@ -48,7 +48,7 @@ export const EMPTY_PROGRESS: Progress = {
   achievements: [],
   days: {},
   stats: { answers: 0, correct: 0, ear: 0, earCorrect: 0, peeks: 0, chats: 0 },
-  settings: { rate: 1, latin: false, autoPlay: true, voice: "auto" },
+  settings: { rate: 1, latin: false, autoPlay: true, handsFree: true, voice: "auto" },
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;

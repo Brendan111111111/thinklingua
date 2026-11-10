@@ -47,11 +47,13 @@ export function SpeakCard({ text, reading, latin, gloss, glyph, tone, locale, ra
   const [href, setHref] = useState("/");
   const [clipUrl, setClipUrl] = useState<string | null>(null);
   const [canListen, setCanListen] = useState(true);
+  const [accepted, setAccepted] = useState(false);
 
   const stopRef = useRef<null | (() => void)>(null);
   const recorderRef = useRef<Recording | null>(null);
   const clipUrlRef = useRef<string | null>(null);
   const settledRef = useRef(false);
+  const acceptedRef = useRef(false);
 
   useEffect(() => {
     setEmbedded(isEmbedded());
@@ -135,13 +137,14 @@ export function SpeakCard({ text, reading, latin, gloss, glyph, tone, locale, ra
     setTones(syllableResult);
     setOverall(finalScore);
     setPhase("scored");
-    onGraded(finalScore >= SPEECH_PASS, finalScore);
   }
 
   async function begin() {
     if (locked || phase === "checking" || phase === "listening" || phase === "analysing" || phase === "recording") return;
     stopSpeaking();
     settledRef.current = false;
+    acceptedRef.current = false;
+    setAccepted(false);
     setProblem(null);
     setHeard("");
     setWords(null);
@@ -250,11 +253,23 @@ export function SpeakCard({ text, reading, latin, gloss, glyph, tone, locale, ra
     setPhase("recorded");
   }
 
+  function finalise(pass: boolean, accuracy: number | null) {
+    if (acceptedRef.current) return;
+    acceptedRef.current = true;
+    setAccepted(true);
+    onGraded(pass, accuracy);
+  }
+
   function acceptRecording() {
-    if (settledRef.current) return;
+    if (acceptedRef.current) return;
     settledRef.current = true;
     setPhase("scored");
-    onGraded(overall === null ? true : overall >= SPEECH_PASS, overall);
+    finalise(overall === null ? true : overall >= SPEECH_PASS, overall);
+  }
+
+  function acceptScore() {
+    if (overall === null) return;
+    finalise(overall >= SPEECH_PASS, overall);
   }
 
   const done = phase === "scored";
@@ -375,15 +390,32 @@ export function SpeakCard({ text, reading, latin, gloss, glyph, tone, locale, ra
               </button>
             </div>
           </div>
+        ) : done ? (
+          accepted ? null : (
+            <div className="flex flex-wrap justify-center gap-2">
+              <button
+                type="button"
+                onClick={begin}
+                disabled={locked}
+                className="btn btn-ghost px-5 py-3"
+              >
+                <Icon name="mic" className="h-4 w-4" />
+                Try again
+              </button>
+              <button type="button" onClick={acceptScore} className="btn btn-primary px-5 py-3">
+                Continue
+              </button>
+            </div>
+          )
         ) : (
           <button
             type="button"
             onClick={begin}
             disabled={locked || phase === "checking"}
-            className={cn("btn px-5 py-3", done ? "btn-ghost" : "btn-primary")}
+            className="btn btn-primary px-5 py-3"
           >
             <Icon name="mic" className="h-4 w-4" />
-            {phase === "checking" ? "Checking microphone…" : done ? "Try again" : "Speak"}
+            {phase === "checking" ? "Checking microphone…" : "Speak"}
           </button>
         )}
 

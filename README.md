@@ -3,13 +3,13 @@
 [![Build and typecheck](https://github.com/Brendan111111111/thinklingua/actions/workflows/build-and-typecheck.yml/badge.svg?branch=main)](https://github.com/Brendan111111111/thinklingua/actions/workflows/build-and-typecheck.yml)
 [![Tone fixture checks](https://github.com/Brendan111111111/thinklingua/actions/workflows/tone-fixtures.yml/badge.svg?branch=main)](https://github.com/Brendan111111111/thinklingua/actions/workflows/tone-fixtures.yml)
 
-**Learn Thai and Japanese by thinking in them — not by translating through English.**
+**Learn Thai, Japanese, Spanish, French and Russian by thinking in them — not by translating through English.**
 
 ThinkLingua is a language-learning app built on one rule: meaning never passes through your native language. Words arrive as a
 picture plus a native voice; grammar arrives as sentence shapes you assemble; the English gloss sits behind a deliberate "peek"
 that costs you your no-English multiplier.
 
-Thai and Japanese are the flagship courses, with Spanish and French running on the same engine.
+Five courses — Thai, Japanese, Spanish, French and Russian — run on the same engine.
 
 ---
 
@@ -35,15 +35,15 @@ Two mechanics keep the method honest:
   app scores the attempt against the native line) and **Reading** (Thai letters and Japanese hiragana, taught as sounds with real
   example words). Pick the track on the course map; progress is tracked separately for each.
 - **Tone contour scoring on Thai** — speaking drills record the attempt alongside speech recognition, extract the pitch of your
-  voice, and compare its shape with the pitch of the native voice. Transcript and melody are weighted 60/40, and the two lines are
-  drawn over each other so you can see the tone bend the wrong way. The line is split across the phrase's syllables, so the result
+  voice, and compare its shape with the pitch of the native voice. Transcript and melody are weighted 60/40, and a measured tone
+  below 45 cannot pass on words alone. The two lines are drawn over each other so you can see the tone bend the wrong way. The line is split across the phrase's syllables, so the result
   names the syllable whose tone drifted instead of scoring the whole phrase as one lump.
 - **AI conversation partner** — a persona per language that speaks only the target language, keeps turns to two sentences, asks
   one question, and **recasts** mistakes instead of grading them. Reply audio uses the same native voice.
 - **Native voices, no setup** — every word is audible on a fresh clone through a keyless native-voice fallback; add an Azure key
-  for the studio neural voices (`th-TH-PremwadeeNeural`, `ja-JP-NanamiNeural`), with Google Cloud TTS and ElevenLabs as
+  for the studio neural voices (`th-TH-PremwadeeNeural`, `ja-JP-NanamiNeural`, `ru-RU-SvetlanaNeural`), with Google Cloud TTS and ElevenLabs as
   alternatives and a locale-filtered device voice as the last resort.
-- **Four courses** — Thai, Japanese, Spanish, French, all generated from the same exercise engine.
+- **Five courses** — Thai, Japanese, Spanish, French and Russian, all generated from the same exercise engine.
 - **Local-first** — progress is stored in the browser. No account, no server database.
 
 ## Quickstart
@@ -73,7 +73,7 @@ foreign text.
 1. Create an Azure AI Services / Speech resource.
 2. Set `AZURE_SPEECH_KEY` and `AZURE_SPEECH_REGION` (for example `southeastasia`).
 3. Defaults: `th-TH-PremwadeeNeural` (Thai) and `ja-JP-NanamiNeural` (Japanese). Override per language with
-   `AZURE_VOICE_TH`, `AZURE_VOICE_JA`, `AZURE_VOICE_ES`, `AZURE_VOICE_FR`.
+   `AZURE_VOICE_TH`, `AZURE_VOICE_JA`, `AZURE_VOICE_ES`, `AZURE_VOICE_FR`, `AZURE_VOICE_RU`.
 
 **Google Cloud TTS** — set `GOOGLE_TTS_API_KEY`. Defaults are `th-TH-Neural2-C` and `ja-JP-Neural2-B`.
 
@@ -88,8 +88,11 @@ preference for Premium/Enhanced/Neural/Siri/Google voices — much better than t
 
 Speaking drills use the microphone. Browsers refuse it to a page embedded inside another page, so if the app is running inside a
 preview panel, open it in its own tab first — the drill detects this and gives you the link instead of an opaque "allow media
-access" prompt. When permission is denied, unsupported or the device is missing, the drill names the exact problem. If the browser
-has no speech recogniser, it records your attempt so you can compare it with the native voice by ear rather than inventing a score.
+access" prompt. When permission is denied, unsupported or the device is missing, the drill names the exact problem. Recognition asks the browser
+for up to five alternatives and scores the best one. Japanese kana readings are accepted alongside kanji; Russian stress marks
+and Spanish/French written accents are treated as recogniser conventions. Thai tone marks, Japanese timing kana and doubled
+consonants remain meaningful contrasts, so a near-match is not silently accepted as the same word. If the browser has no speech
+recogniser, it records your attempt so you can compare it with the native voice by ear rather than inventing a score.
 
 Thai speaking drills also grade tone. The app derives a 24-point pitch contour from your recording (`lib/pitch.ts`, YIN with
 parabolic interpolation) and from the native TTS line, normalises both to semitones around their own median — so a low voice and a
@@ -146,8 +149,8 @@ app/
   fixtures/                 bundled audio for the dev tone assertions
 components/                 shell, lesson engine, chat, dashboards
 lib/
-  content/                  the four courses (lexemes, phrases, ear drills)
-  content/reading.ts        Thai letters, hiragana and phonics lessons
+  content/                  the five courses (lexemes, phrases, ear drills)
+  content/reading.ts        Thai letters, kana, Cyrillic and phonics lessons
   exercises.ts              deterministic exercise generation, all three tracks
   progress.ts               store, SRS, streaks, hearts, quests, achievements
   speech.ts                 playback, browser fallback, speech recognition

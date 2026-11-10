@@ -85,7 +85,7 @@ export default function LandingPage() {
             <div className="flex flex-wrap items-center gap-2">
               <Badge tone="jade">Thai</Badge>
               <Badge tone="sakura">Japanese</Badge>
-              <Badge tone="muted">Spanish · French</Badge>
+              <Badge tone="muted">Spanish · French · Russian</Badge>
             </div>
             <h1 className="mt-5 font-display text-[clamp(2.6rem,6vw,4.3rem)] font-semibold leading-[0.98] tracking-tight">
               Stop translating.
@@ -267,12 +267,9 @@ export default function LandingPage() {
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             {courses.map((course) => (
               <Link key={course.id} href={`/learn/${course.id}`} className="card group p-5 transition hover:-translate-y-0.5 hover:border-jade/40">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">{course.flag}</span>
-                    <span className={cn("font-display text-lg font-semibold", scriptClass[course.id])}>{course.name}</span>
-                  </div>
-                  {course.primary ? <Badge tone="jade">flagship</Badge> : <Badge tone="muted">same method</Badge>}
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{course.flag}</span>
+                  <span className={cn("font-display text-lg font-semibold", scriptClass[course.id])}>{course.name}</span>
                 </div>
                 <p className={cn("mt-2 text-sm text-cream/80", scriptClass[course.id])}>{course.tagline}</p>
                 <p className="mt-3 text-[11px] text-muted">

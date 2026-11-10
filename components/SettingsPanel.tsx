@@ -2,16 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { courses, scriptClass } from "@/lib/content";
+import type { LangId } from "@/lib/content/types";
 import { loadEngine, type EngineInfo } from "@/lib/speech";
 import { resetProgress, saveSettings, useProgress } from "@/lib/progress";
 import { SpeakButton } from "./SpeakButton";
 import { Badge, Icon, cn } from "./ui";
 
-const SAMPLES: Record<string, { text: string; latin: string }> = {
+const SAMPLES: Record<LangId, { text: string; latin: string }> = {
   th: { text: "สวัสดีค่ะ ยินดีที่ได้รู้จัก", latin: "sawatdi kha, yindii thii dai ruuchak" },
   ja: { text: "はじめまして。よろしくおねがいします", latin: "hajimemashite, yoroshiku onegaishimasu" },
   es: { text: "hola, mucho gusto", latin: "ola, mucho gusto" },
   fr: { text: "bonjour, enchanté", latin: "bonzhur, antchanté" },
+  ru: { text: "привет, очень приятно", latin: "privét, óchen priyátno" },
 };
 
 function Toggle({ checked, onChange, label, detail }: { checked: boolean; onChange: (value: boolean) => void; label: string; detail: string }) {
@@ -62,9 +64,9 @@ export function SettingsPanel() {
             <h2 className="font-display text-lg font-semibold">Voice engine</h2>
             <p className="mt-1 text-sm text-muted">
               {engine?.engine === "free"
-                ? "Native Thai and Japanese voices are active out of the box. Add an Azure key whenever you want the studio neural voices."
+                ? "Native Thai, Japanese, Spanish, French and Russian voices are active out of the box. Add an Azure key whenever you want the studio neural voices."
                 : engine?.native
-                  ? "Native neural voices are active. Thai is voiced by a Thai speaker, Japanese by a Japanese speaker."
+                  ? "Native neural voices are active. Each course is voiced by a speaker of that language."
                   : "Running on the best voice installed in this device. Native-accent voices unlock with a voice key."}
             </p>
           </div>
@@ -78,7 +80,7 @@ export function SettingsPanel() {
               Add <code className="rounded bg-ink/60 px-1 py-0.5">AZURE_SPEECH_KEY</code> and{" "}
               <code className="rounded bg-ink/60 px-1 py-0.5">AZURE_SPEECH_REGION</code> to{" "}
               <code className="rounded bg-ink/60 px-1 py-0.5">.env.local</code>. The defaults are
-              th-TH-PremwadeeNeural and ja-JP-NanamiNeural — native speakers, not a synthetic approximation. Google Cloud TTS
+              th-TH-PremwadeeNeural, ja-JP-NanamiNeural and ru-RU-SvetlanaNeural — native speakers, not a synthetic approximation. Google Cloud TTS
               (Neural2) or ElevenLabs multilingual v2 also work.
             </p>
           </div>

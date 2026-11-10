@@ -5,7 +5,7 @@ import type { LangId } from "@/lib/content/types";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const LANGS: LangId[] = ["th", "ja", "es", "fr"];
+const LANGS: LangId[] = ["th", "ja", "es", "fr", "ru"];
 
 type Body = {
   lang?: string;

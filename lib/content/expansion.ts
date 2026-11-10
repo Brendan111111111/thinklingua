@@ -72,6 +72,20 @@ const COPY: Record<LangId, ExpansionCopy> = {
     masteryIntro: "Utilise le français avec précision et souplesse.",
     masteryReadingSuffix: "lecture de maîtrise",
   },
+  ru: {
+    units: ["Активный повтор", "В городе", "Люди и планы", "Промежуточный итог"],
+    lesson: "Практика",
+    intro: "Используй знакомые слова в новых фразах.",
+    readingSuffix: "расширенное чтение",
+    advancedUnits: ["Мнение и оттенки", "Рассказ о прошлом", "Гипотезы", "Работа и учёба", "Культура", "Медиа", "Проекты", "Переговоры", "Продвинутый итог"],
+    advancedLesson: "Продвинутая практика",
+    advancedIntro: "Говори тоньше и точнее.",
+    advancedReadingSuffix: "продвинутое чтение",
+    masteryUnits: ["Дискуссия", "Повествование", "Возможности", "Сложная работа", "Общество", "Современная культура", "Медиа и информация", "Презентации", "Мастерство"],
+    masteryLesson: "Практика мастерства",
+    masteryIntro: "Используй русский точно и свободно.",
+    masteryReadingSuffix: "чтение мастерского уровня",
+  },
 };
 
 const UNIT_GLYPHS = ["🔁", "🏙️", "👥", "🏁"];

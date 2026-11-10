@@ -42,11 +42,11 @@ export type Exercise =
       tiles: string[];
       pool: string[];
     }
-  | { kind: "ear"; key: string; drill: EarDrill }
-  | {
+  | { kind: "ear"; key: string; drill: EarDrill }    | {
       kind: "shadow";
       key: string;
       text: string;
+      reading?: string;
       latin: string;
       gloss: string;
       glyph: string;
@@ -56,6 +56,7 @@ export type Exercise =
       kind: "speak";
       key: string;
       text: string;
+      reading?: string;
       latin: string;
       gloss: string;
       glyph: string;
@@ -211,6 +212,7 @@ function shadow(phrase: Phrase): Exercise {
     kind: "shadow",
     key: `shadow:${phrase.id}`,
     text: phrase.text,
+    reading: phrase.reading,
     latin: phrase.latin,
     gloss: phrase.gloss,
     glyph: phrase.glyph,
@@ -321,7 +323,15 @@ export function earAudio(drill: EarDrill): { text: string; latin: string; gloss:
 /* ── speaking track ───────────────────────────────────────────────────── */
 function speak(
   key: string,
-  entry: { text: string; latin: string; gloss: string; glyph: string; tone?: string; lexemeId?: string },
+  entry: {
+    text: string;
+    reading?: string;
+    latin: string;
+    gloss: string;
+    glyph: string;
+    tone?: string;
+    lexemeId?: string;
+  },
 ): Exercise {
   return { kind: "speak", key, ...entry };
 }
@@ -353,6 +363,7 @@ export function buildSpeaking(course: Course, unit: Unit, variant: 0 | 1 | 2 | 3
     plan.push(
       speak(`speak:${lexeme.id}`, {
         text: lexeme.text,
+        reading: lexeme.reading,
         latin: lexeme.latin,
         gloss: lexeme.gloss,
         glyph: lexeme.glyph,
@@ -370,7 +381,15 @@ export function buildSpeaking(course: Course, unit: Unit, variant: 0 | 1 | 2 | 3
   selectedPhraseIds.forEach((id) => {
     const phrase = course.phrases[id];
     if (!phrase) return;
-    plan.push(speak(`speak:${phrase.id}`, { text: phrase.text, latin: phrase.latin, gloss: phrase.gloss, glyph: phrase.glyph }));
+    plan.push(
+      speak(`speak:${phrase.id}`, {
+        text: phrase.text,
+        reading: phrase.reading,
+        latin: phrase.latin,
+        gloss: phrase.gloss,
+        glyph: phrase.glyph,
+      }),
+    );
   });
 
   return plan;

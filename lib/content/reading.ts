@@ -1,4 +1,5 @@
 import type { LangId, ReadingLesson, ReadingSymbol } from "./types";
+import { russianReading } from "./russianReading";
 
 /**
  * Reading is taught separately from vocabulary.
@@ -394,4 +395,5 @@ export const readingByLanguage: Record<LangId, ReadingLesson[]> = {
   ja: japaneseReading,
   es: spanishReading,
   fr: frenchReading,
+  ru: russianReading,
 };

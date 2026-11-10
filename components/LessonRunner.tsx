@@ -26,6 +26,7 @@ import {
   type LessonResult,
 } from "@/lib/progress";
 import { canRecognise, listenOnce, soundsClose, speak, stopSpeaking } from "@/lib/speech";
+import { bestSpeechMatch } from "@/lib/speechScore";
 import { SpeakButton } from "./SpeakButton";
 import { SpeakCard } from "./SpeakCard";
 import { Badge, Icon, ProgressBar, Ring, cn } from "./ui";
@@ -227,12 +228,18 @@ export function LessonRunner({ courseId, lessonId, mode = "lesson", reviewLexeme
   }
 
   function startHearing() {
-    if (!course) return;
+    if (!course || !current || current.kind !== "shadow") return;
     setTranscript(null);
     setHearing(true);
+    const targets = [current.text, "reading" in current ? current.reading : undefined].filter(
+      (value): value is string => Boolean(value),
+    );
     const stop = listenOnce(
       course.locale,
-      (text) => setTranscript(text),
+      (text, alternatives) => {
+        const match = bestSpeechMatch([text, ...alternatives], targets, course.locale);
+        setTranscript(match?.transcript ?? text);
+      },
       () => setHearing(false),
     );
     if (!stop) setHearing(false);
@@ -576,7 +583,13 @@ export function LessonRunner({ courseId, lessonId, mode = "lesson", reviewLexeme
                   <p className="text-[11px] uppercase tracking-wide text-muted">I heard</p>
                   <p className={cn("mt-1 text-lg", targetClass)}>{transcript || "—"}</p>
                   <p className="mt-1 text-xs text-jade">
-                    {soundsClose(transcript, current.text) ? "Close enough — that is the shape." : "Try once more, slower, then move on."}
+                    {soundsClose(
+                      transcript,
+                      [current.text, current.reading].filter((value): value is string => Boolean(value)),
+                      course.locale,
+                    )
+                      ? "Close enough — that is the shape."
+                      : "Try once more, slower, then move on."}
                   </p>
                 </div>
               )}
@@ -662,6 +675,7 @@ export function LessonRunner({ courseId, lessonId, mode = "lesson", reviewLexeme
           <SpeakCard
             key={current.key}
             text={current.text}
+            reading={current.reading}
             latin={current.latin}
             gloss={current.gloss}
             glyph={current.glyph}

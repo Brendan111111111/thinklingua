@@ -9,6 +9,7 @@ const PERSONA: Record<LangId, { name: string; label: string }> = {
   ja: { name: "Aoi", label: "Japanese" },
   es: { name: "Lucía", label: "Spanish" },
   fr: { name: "Camille", label: "French" },
+  ru: { name: "Dasha", label: "Russian" },
 };
 
 export function personaFor(lang: LangId) {
@@ -64,6 +65,7 @@ export const STARTERS: Record<LangId, string[]> = {
   ja: ["こんにちは", "わたしはベンダンです", "今日はいい天気ですね"],
   es: ["hola", "me llamo Brendan", "hoy hace buen tiempo"],
   fr: ["bonjour", "je m'appelle Brendan", "il fait beau aujourd'hui"],
+  ru: ["привет", "меня зовут Брендан", "сегодня хорошая погода"],
 };
 
 export function levelFromXp(xp: number): number {

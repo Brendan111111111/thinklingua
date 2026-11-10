@@ -29,8 +29,8 @@ export function CoursePicker() {
         <p className="text-[11px] uppercase tracking-[0.2em] text-jade">Courses</p>
         <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight">Choose a language to think in</h1>
         <p className="mt-2 max-w-xl text-sm text-muted">
-          Thai and Japanese are the flagship courses, built with tone and mora drills from the first lesson. Spanish and French
-          use the same engine for a change of scenery.
+          Thai, Japanese, Spanish, French and Russian all use the same method: pictures and native voices first, speaking practice
+          in every unit, and reading lessons built for that language's writing system. Pick the one you want to think in.
         </p>
       </header>
 
@@ -57,12 +57,11 @@ export function CoursePicker() {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-2xl">{course.flag}</span>
-                    {course.primary ? <Badge tone="jade">primary</Badge> : <Badge tone="muted">same method</Badge>}
                   </div>
                   <h2 className={cn("mt-3 font-display text-2xl font-semibold", scriptClass[course.id])}>{course.name}</h2>
                   <p className="text-sm text-muted">{course.english}</p>
                 </div>
-                <Ring value={percent} size={58} stroke={5} tone={course.id === "ja" ? "#ff7ea0" : course.id === "th" ? "#ffc65c" : "#a78bfa"}>
+                <Ring value={percent} size={58} stroke={5} tone={course.id === "ja" ? "#ff7ea0" : course.id === "th" ? "#ffc65c" : course.id === "ru" ? "#6fc3ff" : "#a78bfa"}>
                   <span className="text-[11px] font-semibold">{Math.round(percent * 100)}%</span>
                 </Ring>
               </div>
@@ -91,18 +90,21 @@ export function CoursePicker() {
 
       <section className="card mt-6 p-6">
         <h2 className="font-display text-lg font-semibold">Three ways into every unit</h2>
-        <div className="mt-3 grid gap-4 text-sm text-muted sm:grid-cols-3">
+        <p className="mt-1 text-sm text-muted">
+          Thai, Japanese, Spanish, French and Russian share the same three tracks. Every unit gives you all three ways in.
+        </p>
+        <div className="mt-4 grid gap-4 text-sm text-muted sm:grid-cols-3">
           <div>
-            <p className="font-semibold text-cream">Words — picture → sound → word</p>
-            <p className="mt-1">Every new word lands on an image and a native voice before it lands on anything written.</p>
+            <p className="font-semibold text-cream">Words — picture → sound → meaning</p>
+            <p className="mt-1">Each new word starts with an image and a native voice. You connect the sound to the meaning first, then meet the written form — with no English translation in between.</p>
           </div>
           <div>
-            <p className="font-semibold text-cream">Speaking — you talk, it grades</p>
-            <p className="mt-1">The microphone drill compares what you said with the native line and shows what it missed.</p>
+            <p className="font-semibold text-cream">Speaking — say it, then sharpen it</p>
+            <p className="mt-1">Every unit includes microphone passes. Say the line, compare it with the native model, and see which sounds need another try before moving on.</p>
           </div>
           <div>
-            <p className="font-semibold text-cream">Reading — the letters themselves</p>
-            <p className="mt-1">Hiragana and Thai letters get their own lessons, taught as sounds rather than as a chart.</p>
+            <p className="font-semibold text-cream">Reading — the writing system, sound by sound</p>
+            <p className="mt-1">Thai letters, Japanese kana, Spanish accents and stress, French silent letters and liaison, and Russian Cyrillic each get dedicated lessons. You learn how the language writes the sounds you already know, not a chart to memorize.</p>
           </div>
         </div>
         {ready && (

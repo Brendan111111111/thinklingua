@@ -2,6 +2,7 @@ import { thai } from "./thai";
 import { japanese } from "./japanese";
 import { spanish } from "./spanish";
 import { french } from "./french";
+import { russian } from "./russian";
 import { intermediateReadingByLanguage } from "./readingIntermediate";
 import { expandLevels } from "./expansion";
 import type { Course, LangId, Lesson, ReadingLesson, SpeakingVariant, Track, Unit } from "./types";
@@ -21,7 +22,7 @@ export type {
 } from "./types";
 
 const PRACTICE_SUFFIX = ".practice";
-const AGAIN: Record<LangId, string> = { th: "อีกครั้ง", ja: "もう一度", es: "otra vez", fr: "encore" };
+const AGAIN: Record<LangId, string> = { th: "อีกครั้ง", ja: "もう一度", es: "otra vez", fr: "encore", ru: "ещё раз" };
 const FOUR_SPEAKING_VARIANTS = [0, 1, 2, 3] as const;
 const SIX_SPEAKING_VARIANTS = [0, 1, 2, 3, 4, 5] as const;
 
@@ -63,6 +64,7 @@ const CHECKPOINT: Record<LangId, { title: string; intro: string }> = {
   ja: { title: "復習", intro: "この章のぜんぶを、もう一度。" },
   es: { title: "Repaso", intro: "Repasa este capítulo." },
   fr: { title: "Révision", intro: "Révise ce chapitre." },
+  ru: { title: "Повторение", intro: "Повтори этот раздел." },
 };
 
 /** Older courses grow a checkpoint for every unit that does not have one yet. */
@@ -92,7 +94,7 @@ function withIntermediateReading(course: Course): Course {
   return extra.length > 0 ? { ...course, reading: [...course.reading, ...extra] } : course;
 }
 
-const sourceCourses: Course[] = [thai, japanese, spanish, french];
+const sourceCourses: Course[] = [thai, japanese, spanish, french, russian];
 export const courses: Course[] = sourceCourses.map((course) =>
   withPractice(ensureCheckpoints(expandLevels(withIntermediateReading(course)))),
 );
@@ -223,6 +225,7 @@ export const scriptClass: Record<LangId, string> = {
   ja: "script-ja",
   es: "script-es",
   fr: "script-fr",
+  ru: "script-ru",
 };
 
 export const tintClass: Record<Unit["tint"], { text: string; ring: string; from: string; border: string }> = {

@@ -2,7 +2,9 @@ import { thai } from "./thai";
 import { japanese } from "./japanese";
 import { spanish } from "./spanish";
 import { french } from "./french";
-import type { Course, LangId, Lesson, ReadingLesson, Track, Unit } from "./types";
+import { intermediateReadingByLanguage } from "./readingIntermediate";
+import { expandLevels } from "./expansion";
+import type { Course, LangId, Lesson, ReadingLesson, SpeakingVariant, Track, Unit } from "./types";
 
 export type {
   Course,
@@ -18,7 +20,76 @@ export type {
   ReadingSymbol,
 } from "./types";
 
-export const courses: Course[] = [thai, japanese, spanish, french];
+const PRACTICE_SUFFIX = ".practice";
+const AGAIN: Record<LangId, string> = { th: "อีกครั้ง", ja: "もう一度", es: "otra vez", fr: "encore" };
+
+function practiceLesson(course: Course, lesson: Lesson): Lesson {
+  return {
+    ...lesson,
+    id: `${lesson.id}${PRACTICE_SUFFIX}`,
+    title: `${lesson.title} · ${AGAIN[course.id]}`,
+    latin: `${lesson.latin} · review`,
+  };
+}
+
+function practiceReading(course: Course, lesson: ReadingLesson): ReadingLesson {
+  return {
+    ...lesson,
+    id: `${lesson.id}${PRACTICE_SUFFIX}`,
+    title: `${lesson.title} · ${AGAIN[course.id]}`,
+    latin: `${lesson.latin} · review`,
+  };
+}
+
+function withPractice(course: Course): Course {
+  return {
+    ...course,
+    units: course.units.map((unit) => ({
+      ...unit,
+      lessons: unit.lessons.flatMap((lesson) => [lesson, practiceLesson(course, lesson)]),
+    })),
+    reading: course.reading.flatMap((lesson) => [lesson, practiceReading(course, lesson)]),
+  };
+}
+
+const CHECKPOINT: Record<LangId, { title: string; intro: string }> = {
+  th: { title: "ทบทวน", intro: "ทบทวนทุกอย่างในบทนี้" },
+  ja: { title: "復習", intro: "この章のぜんぶを、もう一度。" },
+  es: { title: "Repaso", intro: "Repasa este capítulo." },
+  fr: { title: "Révision", intro: "Révise ce chapitre." },
+};
+
+/** Older courses grow a checkpoint for every unit that does not have one yet. */
+function ensureCheckpoints(course: Course): Course {
+  return {
+    ...course,
+    units: course.units.map((unit) => {
+      if (unit.lessons.some((lesson) => lesson.kind === "checkpoint")) return unit;
+      const copy = CHECKPOINT[course.id];
+      const checkpoint: Lesson = {
+        id: `${unit.id}.l${unit.lessons.length + 1}`,
+        title: copy.title,
+        latin: "Checkpoint",
+        intro: copy.intro,
+        kind: "checkpoint",
+        newLexemes: [],
+        phrases: [...new Set(unit.lessons.flatMap((lesson) => lesson.phrases))],
+        ear: unit.lessons.flatMap((lesson) => lesson.ear).slice(0, 2),
+      };
+      return { ...unit, lessons: [...unit.lessons, checkpoint] };
+    }),
+  };
+}
+
+function withIntermediateReading(course: Course): Course {
+  const extra = intermediateReadingByLanguage[course.id];
+  return extra.length > 0 ? { ...course, reading: [...course.reading, ...extra] } : course;
+}
+
+const sourceCourses: Course[] = [thai, japanese, spanish, french];
+export const courses: Course[] = sourceCourses.map((course) =>
+  withPractice(ensureCheckpoints(expandLevels(withIntermediateReading(course)))),
+);
 
 const byId = new Map(courses.map((course) => [course.id, course]));
 
@@ -40,14 +111,31 @@ export function courseLessonCount(course: Course): number {
   return course.units.reduce((total, unit) => total + unit.lessons.length, 0);
 }
 
-/** Speaking lessons are generated: one per unit, drawn from its words. */
-export function speakingLessonId(unit: Unit): string {
-  return `speak.${unit.id}`;
+/** Speaking lessons are generated: four passes per unit, drawn from its words. */
+export function speakingLessonId(unit: Unit, variant: SpeakingVariant = 0): string {
+  if (variant === 0) return `speak.${unit.id}`;
+  return variant === 1
+    ? `speak.${unit.id}${PRACTICE_SUFFIX}`
+    : `speak.${unit.id}${PRACTICE_SUFFIX}-${variant}`;
+}
+
+export function speakingVariantFor(lessonId: string): SpeakingVariant {
+  if (lessonId.endsWith(`${PRACTICE_SUFFIX}-3`)) return 3;
+  if (lessonId.endsWith(`${PRACTICE_SUFFIX}-2`)) return 2;
+  if (lessonId.endsWith(PRACTICE_SUFFIX)) return 1;
+  return 0;
+}
+
+export function speakingLessonTitle(course: Course, unit: Unit, variant: SpeakingVariant): string {
+  if (variant === 0) return unit.title;
+  const again = AGAIN[course.id];
+  return `${unit.title} · ${again}${variant > 1 ? ` ${variant}` : ""}`;
 }
 
 export function findSpeakingUnit(course: Course, lessonId: string): Unit | undefined {
   if (!lessonId.startsWith("speak.")) return undefined;
-  return course.units.find((unit) => speakingLessonId(unit) === lessonId);
+  const base = lessonId.replace(/\.practice(?:-\d+)?$/, "");
+  return course.units.find((unit) => speakingLessonId(unit) === base);
 }
 
 export function findReadingLesson(course: Course, lessonId: string): ReadingLesson | undefined {
@@ -57,12 +145,17 @@ export function findReadingLesson(course: Course, lessonId: string): ReadingLess
 /** Every lesson id in a track, in the order the course map shows them. */
 export function trackLessonIds(course: Course, track: Track): string[] {
   if (track === "words") return allLessons(course).map(({ lesson }) => lesson.id);
-  if (track === "speak") return course.units.map(speakingLessonId);
+  if (track === "speak") return course.units.flatMap((unit) => ([0, 1, 2, 3] as const).map((variant) => speakingLessonId(unit, variant)));
   return course.reading.map((lesson) => lesson.id);
 }
 
 export function trackLessonCount(course: Course, track: Track): number {
   return trackLessonIds(course, track).length;
+}
+
+/** Audio-only production drills wait until every reading lesson is complete. */
+export function hasCompletedReadingTrack(course: Course, completed: Record<string, unknown>): boolean {
+  return course.reading.length > 0 && course.reading.every((lesson) => Boolean(completed[lesson.id]));
 }
 
 export function totalCourseLessons(course: Course): number {
@@ -84,7 +177,14 @@ export function lessonSummary(
   }
   const unit = findSpeakingUnit(course, lessonId);
   if (unit) {
-    return { id: lessonId, title: unit.title, latin: `${unit.latin} · speaking`, intro: `${unit.latin} — say what you know out loud.`, track: "speak" };
+    const variant = speakingVariantFor(lessonId);
+    return {
+      id: lessonId,
+      title: speakingLessonTitle(course, unit, variant),
+      latin: `${unit.latin} · speaking${variant === 1 ? " review" : variant > 1 ? ` review ${variant}` : ""}`,
+      intro: `${unit.latin} — say what you know out loud.`,
+      track: "speak",
+    };
   }
   const reading = findReadingLesson(course, lessonId);
   if (reading) {

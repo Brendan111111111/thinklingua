@@ -219,9 +219,18 @@ function shadow(phrase: Phrase): Exercise {
 }
 
 /* ── lesson assembly ───────────────────────────────────────────────────── */
-export function buildExercises(course: Course, lesson: Lesson): Exercise[] {
-  const lexemes = lesson.newLexemes.map((id) => course.lexemes[id]).filter(Boolean) as Lexeme[];
-  const phrases = lesson.phrases.map((id) => course.phrases[id]).filter(Boolean) as Phrase[];
+export function buildExercises(
+  course: Course,
+  lesson: Lesson,
+  options: { allowAudioOnlyBuilds?: boolean } = {},
+): Exercise[] {
+  const allowAudioOnlyBuilds = options.allowAudioOnlyBuilds ?? false;
+  const practice = lesson.id.endsWith(".practice");
+  const lexemeIds = practice ? [...lesson.newLexemes].reverse() : lesson.newLexemes;
+  const phraseIds = practice ? [...lesson.phrases].reverse() : lesson.phrases;
+  const earDrills = practice ? [...lesson.ear].reverse() : lesson.ear;
+  const lexemes = lexemeIds.map((id) => course.lexemes[id]).filter(Boolean) as Lexeme[];
+  const phrases = phraseIds.map((id) => course.phrases[id]).filter(Boolean) as Phrase[];
   const includingCheckpoint = lexemes.length > 0 ? lexemes : (Object.values(course.lexemes) as Lexeme[]);
   const unitLexemes = includingCheckpoint;
   const plan: Exercise[] = [];
@@ -233,31 +242,37 @@ export function buildExercises(course: Course, lesson: Lesson): Exercise[] {
     plan.push(exercise);
   };
 
+  const addBuild = (phrase: Phrase, audioOnly: boolean) => {
+    if (audioOnly && !allowAudioOnlyBuilds) return;
+    push(build(phrase, audioOnly));
+  };
+
   // 1. Meet the meaning: sound + picture, no English.
   includingCheckpoint.slice(0, 4).forEach((lexeme, index) => {
     push(index === 3 ? listen(course, lexeme, unitLexemes) : recognise(course, lexeme, unitLexemes));
   });
 
-  // 2. First sentence, built from tiles in the target script.
-  phrases.slice(0, 2).forEach((phrase, index) => push(build(phrase, index === 1)));
+  // 2. First sentence, built from tiles in the target script. Audio-only
+  // builds are deferred until the reading track has taught the script.
+  phrases.slice(0, 2).forEach((phrase, index) => addBuild(phrase, index === 1));
 
   // 3. Re-attach meaning to the written form.
   includingCheckpoint.slice(0, 2).forEach((lexeme) => push(read(course, lexeme, unitLexemes)));
 
   // 4. Perception work on the accent.
-  lesson.ear.slice(0, 2).forEach((drill) => push({ kind: "ear", key: `ear:${drill.id}`, drill }));
+  earDrills.slice(0, 2).forEach((drill) => push({ kind: "ear", key: `ear:${drill.id}`, drill }));
 
   // 5. Retest with audio only, then more sentences.
   includingCheckpoint.slice(2, 6).forEach((lexeme, index) =>
     push(index === 0 ? recognise(course, lexeme, unitLexemes) : listen(course, lexeme, unitLexemes)),
   );
-  phrases.slice(2).forEach((phrase, index) => push(build(phrase, index % 2 === 1)));
+  phrases.slice(2).forEach((phrase, index) => addBuild(phrase, index % 2 === 1));
 
   // 6. Say it out loud.
   if (phrases[0]) push(shadow(phrases[0]));
 
   // 7. Leftover perception drills and a final written check.
-  lesson.ear.slice(2).forEach((drill) => push({ kind: "ear", key: `ear:${drill.id}`, drill }));
+  earDrills.slice(2).forEach((drill) => push({ kind: "ear", key: `ear:${drill.id}`, drill }));
   includingCheckpoint.slice(4, 8).forEach((lexeme) => push(read(course, lexeme, unitLexemes)));
 
   const cap = lesson.kind === "checkpoint" ? 18 : 14;
@@ -312,14 +327,23 @@ function speak(
 }
 
 /**
- * One speaking lesson per unit: the learner says the unit's own words, so the
- * drill never asks for a sound the course has not introduced yet.
+ * Four speaking passes per unit: the learner only says words and sentences the
+ * unit has already introduced. Each pass rotates the selection order so the
+ * later passes do not simply repeat the first one.
  */
-export function buildSpeaking(course: Course, unit: Unit): Exercise[] {
+export function buildSpeaking(course: Course, unit: Unit, variant: 0 | 1 | 2 | 3 = 0): Exercise[] {
   const plan: Exercise[] = [];
   const seen = new Set<string>();
 
-  unit.lessons.flatMap((lesson) => lesson.newLexemes).forEach((id) => {
+  const lexemeIds = [...new Set(unit.lessons.flatMap((lesson) => lesson.newLexemes))];
+  const orderedLexemeIds = (() => {
+    if (variant === 0) return lexemeIds;
+    if (variant === 1) return [...lexemeIds].reverse();
+    if (variant === 2) return [...lexemeIds.slice(1), ...lexemeIds.slice(0, 1)];
+    return [...lexemeIds.slice(2), ...lexemeIds.slice(0, 2)];
+  })();
+
+  orderedLexemeIds.forEach((id) => {
     if (seen.has(id) || plan.length >= 7) return;
     seen.add(id);
     const lexeme = course.lexemes[id];
@@ -336,8 +360,12 @@ export function buildSpeaking(course: Course, unit: Unit): Exercise[] {
     );
   });
 
-  const phraseIds = [...new Set(unit.lessons.flatMap((lesson) => lesson.phrases))].slice(0, 2);
-  phraseIds.forEach((id) => {
+  const phraseIds = [...new Set(unit.lessons.flatMap((lesson) => lesson.phrases))];
+  const phraseStart = variant === 0 ? 0 : variant === 1 ? Math.max(0, phraseIds.length - 2) : variant * 2;
+  const selectedPhraseIds = [...new Set(
+    Array.from({ length: Math.min(2, phraseIds.length) }, (_, index) => phraseIds[(phraseStart + index) % phraseIds.length]),
+  )];
+  selectedPhraseIds.forEach((id) => {
     const phrase = course.phrases[id];
     if (!phrase) return;
     plan.push(speak(`speak:${phrase.id}`, { text: phrase.text, latin: phrase.latin, gloss: phrase.gloss, glyph: phrase.glyph }));

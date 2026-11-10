@@ -3,7 +3,17 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { buildExercises, buildReading, buildReview, buildSpeaking, earAudio } from "@/lib/exercises";
-import { findLesson, findReadingLesson, findSpeakingUnit, getCourse, scriptClass } from "@/lib/content";
+import {
+  findLesson,
+  findReadingLesson,
+  findSpeakingUnit,
+  getCourse,
+  hasCompletedReadingTrack,
+  scriptClass,
+  speakingLessonTitle,
+  speakingVariantFor,
+  trackLessonIds,
+} from "@/lib/content";
 import {
   HEART_MAX,
   completeLesson,
@@ -20,34 +30,49 @@ import { SpeakButton } from "./SpeakButton";
 import { SpeakCard } from "./SpeakCard";
 import { Badge, Icon, ProgressBar, Ring, cn } from "./ui";
 
-type Props = { courseId: string; lessonId?: string; mode?: "lesson" | "review" };
+type Props = { courseId: string; lessonId?: string; mode?: "lesson" | "review"; reviewLexemeIds?: string[] };
 
 const CONFETTI_COLOURS = ["#3de0ae", "#ffc65c", "#ff7ea0", "#a78bfa", "#6fc3ff"];
 
-export function LessonRunner({ courseId, lessonId, mode = "lesson" }: Props) {
+export function LessonRunner({ courseId, lessonId, mode = "lesson", reviewLexemeIds }: Props) {
   const course = useMemo(() => getCourse(courseId), [courseId]);
+  const { progress, ready } = useProgress();
+  const readingTrackComplete = useMemo(
+    () => (course ? hasCompletedReadingTrack(course, progress.completed) : false),
+    [course, progress.completed],
+  );
+  const speakingVariant = lessonId?.startsWith("speak.") ? speakingVariantFor(lessonId) : 0;
+  const previousLessonId = useMemo(() => {
+    if (!course || !lessonId || mode === "review") return null;
+    const track = lessonId.startsWith("read.") ? "read" : lessonId.startsWith("speak.") ? "speak" : "words";
+    const ids = trackLessonIds(course, track);
+    const at = ids.indexOf(lessonId);
+    return at > 0 ? ids[at - 1] : null;
+  }, [course, lessonId, mode]);
   const exercises = useMemo(() => {
     const currentCourse = getCourse(courseId);
     if (!currentCourse) return [];
-    if (mode === "review") return buildReview(currentCourse, Object.keys(currentCourse.lexemes));
+    if (mode === "review") return buildReview(currentCourse, reviewLexemeIds ?? Object.keys(currentCourse.lexemes));
     if (lessonId?.startsWith("read.")) {
       const reading = findReadingLesson(currentCourse, lessonId);
       return reading ? buildReading(reading) : [];
     }
     if (lessonId?.startsWith("speak.")) {
       const unit = findSpeakingUnit(currentCourse, lessonId);
-      return unit ? buildSpeaking(currentCourse, unit) : [];
+      return unit ? buildSpeaking(currentCourse, unit, speakingVariant) : [];
     }
     const found = lessonId ? findLesson(currentCourse, lessonId) : undefined;
-    return found ? buildExercises(currentCourse, found.lesson) : [];
-  }, [courseId, lessonId, mode]);
+    return found
+      ? buildExercises(currentCourse, found.lesson, { allowAudioOnlyBuilds: readingTrackComplete })
+      : [];
+  }, [courseId, lessonId, mode, reviewLexemeIds, readingTrackComplete, speakingVariant]);
 
   const found = course && lessonId ? findLesson(course, lessonId) : undefined;
   const readingLesson = course && lessonId ? findReadingLesson(course, lessonId) : undefined;
   const speakingUnit = course && lessonId ? findSpeakingUnit(course, lessonId) : undefined;
-  const lessonTitle = readingLesson?.title ?? speakingUnit?.title ?? found?.lesson.title ?? "";
+  const speakingTitle = course && speakingUnit ? speakingLessonTitle(course, speakingUnit, speakingVariant) : undefined;
+  const lessonTitle = readingLesson?.title ?? speakingTitle ?? found?.lesson.title ?? "";
   const unitTitle = readingLesson ? "Reading" : speakingUnit ? "Speaking" : found?.unit.title;
-  const { progress, ready } = useProgress();
 
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState<"answer" | "correct" | "wrong">("answer");
@@ -303,6 +328,15 @@ export function LessonRunner({ courseId, lessonId, mode = "lesson" }: Props) {
               Talk to a native
             </Link>
           </div>
+          {previousLessonId && (
+            <Link
+              href={`/learn/${course.id}/${previousLessonId}`}
+              className="mt-3 inline-flex items-center justify-center gap-1.5 text-xs text-muted transition hover:text-cream"
+            >
+              <Icon name="arrow" className="h-3.5 w-3.5 rotate-180" />
+              Previous lesson
+            </Link>
+          )}
         </div>
       </div>
     );
@@ -331,6 +365,16 @@ export function LessonRunner({ courseId, lessonId, mode = "lesson" }: Props) {
   return (
     <div className="mx-auto max-w-2xl pb-40">
       <div className="mb-5 flex items-center gap-3">
+        {previousLessonId && (
+          <Link
+            href={`/learn/${course.id}/${previousLessonId}`}
+            aria-label="Previous lesson"
+            title="Previous lesson"
+            className="btn btn-ghost h-10 w-10 shrink-0"
+          >
+            <Icon name="arrow" className="h-4 w-4 rotate-180" />
+          </Link>
+        )}
         <Link href={`/learn/${course.id}`} aria-label="Leave lesson" className="btn btn-ghost h-10 w-10 shrink-0">
           <Icon name="x" className="h-4 w-4" />
         </Link>

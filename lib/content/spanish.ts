@@ -1,5 +1,6 @@
 import type { Course, EarDrill, Lexeme, Phrase } from "./types";
 import { spanishReading } from "./reading";
+import { spanishIntermediatePhrases, spanishIntermediateUnits } from "./intermediate";
 
 const L = (
   id: string,
@@ -74,6 +75,7 @@ const phraseList: Phrase[] = [
   P("es.p12", "💼", "hoy trabajo en casa", "oy trabajo en kasa", "today I work at home", ["hoy", "trabajo", "en", "casa"], ["mañana", "noche"]),
   P("es.p13", "🌅", "mañana bebo café", "manyana bebo kafé", "tomorrow I drink coffee", ["mañana", "bebo", "café"], ["hoy", "agua"]),
   P("es.p14", "🌙", "ahora es de noche", "aora es de noche", "now it is night", ["ahora", "es", "de", "noche"], ["tarde", "hoy"]),
+  ...spanishIntermediatePhrases,
 ];
 
 const ear = (
@@ -246,6 +248,7 @@ export const spanish: Course = {
         },
       ],
     },
+    ...spanishIntermediateUnits,
   ],
   reading: spanishReading,
 };

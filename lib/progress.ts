@@ -22,7 +22,8 @@ export type Progress = {
   lastDay: string | null;
   mono: number;
   bestMono: number;
-  completed: Record<string, { best: number; at: number }>;
+  completed: Record<string, { best: number; at: number; skipped?: boolean }>;
+  placement: Partial<Record<LangId, { score: number; at: number }>>;
   srs: Record<string, Card>;
   achievements: string[];
   days: Record<string, DayStat>;
@@ -42,6 +43,7 @@ export const EMPTY_PROGRESS: Progress = {
   mono: 0,
   bestMono: 0,
   completed: {},
+  placement: {},
   srs: {},
   achievements: [],
   days: {},
@@ -91,6 +93,7 @@ function hydrate(): Progress {
       state = {
         ...EMPTY_PROGRESS,
         ...parsed,
+        placement: { ...EMPTY_PROGRESS.placement, ...(parsed.placement ?? {}) },
         settings: { ...EMPTY_PROGRESS.settings, ...(parsed.settings ?? {}) },
         stats: { ...EMPTY_PROGRESS.stats, ...(parsed.stats ?? {}) },
       };
@@ -173,6 +176,28 @@ export function todayStat(progress: Progress): DayStat {
 /* ── mutations ─────────────────────────────────────────────────────────── */
 export function setActiveLanguage(lang: LangId) {
   update((progress) => (progress.active === lang ? progress : { ...progress, active: lang }));
+}
+
+/** Mark a placement-test result without granting lesson XP or streak credit. */
+export function placeAtIntermediate(lang: LangId, lessonIds: string[], score: number) {
+  update((progress) => {
+    const now = Date.now();
+    const completed = { ...progress.completed };
+    for (const id of lessonIds) {
+      const existing = completed[id];
+      completed[id] = {
+        best: Math.max(existing?.best ?? 0, 100),
+        at: existing?.at ?? now,
+        skipped: true,
+      };
+    }
+    return {
+      ...progress,
+      active: lang,
+      completed,
+      placement: { ...progress.placement, [lang]: { score, at: now } },
+    };
+  });
 }
 
 function todays(progress: Progress): [string, DayStat] {

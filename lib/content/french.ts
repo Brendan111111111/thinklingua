@@ -1,5 +1,6 @@
 import type { Course, EarDrill, Lexeme, Phrase } from "./types";
 import { frenchReading } from "./reading";
+import { frenchIntermediatePhrases, frenchIntermediateUnits } from "./intermediate";
 
 const L = (
   id: string,
@@ -73,6 +74,7 @@ const phraseList: Phrase[] = [
   P("fr.p12", "💼", "aujourd'hui je travaille", "ozhur-dwi zhuh travai", "today I work", ["aujourd'hui", "je", "travaille"], ["demain", "nuit"]),
   P("fr.p13", "🌅", "demain je bois du café", "duh-man zhuh bwa du kafe", "tomorrow I drink coffee", ["demain", "je", "bois", "du", "café"], ["aujourd'hui", "eau"]),
   P("fr.p14", "🌙", "maintenant il fait nuit", "ment-nan il fe nwi", "now it is night", ["maintenant", "il", "fait", "nuit"], ["tard", "demain"]),
+  ...frenchIntermediatePhrases,
 ];
 
 const ear = (
@@ -245,6 +247,7 @@ export const french: Course = {
         },
       ],
     },
+    ...frenchIntermediateUnits,
   ],
   reading: frenchReading,
 };

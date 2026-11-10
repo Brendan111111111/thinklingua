@@ -217,8 +217,7 @@ export function TutorChat() {
         <div className="mt-3 rounded-2xl border border-gold/30 bg-gold/10 p-4 text-sm text-gold">
           <p className="font-semibold">The AI partner needs a key.</p>
           <p className="mt-1 text-gold/80">
-            Add <code className="rounded bg-ink/60 px-1.5 py-0.5">OPENAI_API_KEY</code> to <code className="rounded bg-ink/60 px-1.5 py-0.5">.env.local</code> (Freebuff → Account →
-            Developer API), set <code className="rounded bg-ink/60 px-1.5 py-0.5">AI_BASE_URL</code> to your OpenAI-compatible endpoint, then restart the server.
+            Add <code className="rounded bg-ink/60 px-1.5 py-0.5">GEMINI_API_KEY</code> (Google AI Studio) or <code className="rounded bg-ink/60 px-1.5 py-0.5">OPENAI_API_KEY</code> (Freebuff → Account → Developer API) to <code className="rounded bg-ink/60 px-1.5 py-0.5">.env.local</code> or your Worker secrets, then restart or redeploy. Gemini uses its OpenAI-compatible endpoint automatically.
             {engineNative === false ? " Voice keys are separate — see Settings." : ""}
           </p>
         </div>

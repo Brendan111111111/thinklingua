@@ -158,3 +158,10 @@ vite.config.ts.timestamp-*
 playwright-report/
 test-results/
 blob-report/
+/freebuff-sites-build/
+/.open-next/
+/.wrangler/
+
+# Local secret handoff (never commit)
+.gemini-key
+.gemini-key.*

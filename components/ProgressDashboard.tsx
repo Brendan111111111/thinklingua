@@ -14,6 +14,8 @@ import {
   useProgress,
 } from "@/lib/progress";
 import { Badge, Icon, ProgressBar, Ring, cn } from "./ui";
+import { ConceptImage } from "./ConceptImage";
+import { CourseFlag } from "./CourseFlag";
 
 function lastDays(count: number): string[] {
   return Array.from({ length: count }, (_, index) => {
@@ -118,7 +120,7 @@ export function ProgressDashboard() {
             <div key={quest.id}>
               <div className="flex items-center justify-between text-sm">
                 <span className="flex items-center gap-2">
-                  <span>{quest.glyph}</span>
+                  <ConceptImage glyph={quest.glyph} renderSize={20} className="text-gold" label={quest.label} />
                   {quest.label}
                 </span>
                 <span className={cn("text-xs", quest.value >= quest.target ? "text-jade" : "text-muted")}>
@@ -149,8 +151,8 @@ export function ProgressDashboard() {
                   unlocked ? "border-jade/35 bg-jade/[0.07]" : "border-line/60 bg-panel/30 opacity-70",
                 )}
               >
-                <span className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-xl text-lg", unlocked ? "bg-jade/15" : "bg-line/40 grayscale")}>
-                  {achievement.glyph}
+                <span className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-xl", unlocked ? "bg-jade/15" : "bg-line/40 grayscale")}>
+                  <ConceptImage glyph={achievement.glyph} renderSize={24} label={achievement.title} />
                 </span>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">{achievement.title}</p>
@@ -174,7 +176,7 @@ export function ProgressDashboard() {
               <Link key={option.id} href={`/learn/${option.id}`} className="block rounded-xl p-2 transition hover:bg-panel/50">
                 <div className="flex items-center justify-between text-sm">
                   <span className="flex items-center gap-2">
-                    <span>{option.flag}</span>
+                    <CourseFlag code={option.flag} />
                     <span className={scriptClass[option.id]}>{option.name}</span>
                     {option.primary && <Badge tone="jade">primary</Badge>}
                   </span>

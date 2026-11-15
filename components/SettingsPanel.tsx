@@ -5,6 +5,7 @@ import { courses, scriptClass } from "@/lib/content";
 import type { LangId } from "@/lib/content/types";
 import { loadEngine, type EngineInfo } from "@/lib/speech";
 import { resetProgress, saveSettings, useProgress } from "@/lib/progress";
+import { CourseFlag } from "./CourseFlag";
 import { SpeakButton } from "./SpeakButton";
 import { Badge, Icon, cn } from "./ui";
 
@@ -89,7 +90,7 @@ export function SettingsPanel() {
         <div className="mt-5 space-y-3">
           {courses.map((course) => (
             <div key={course.id} className="flex items-center gap-3 rounded-2xl border border-line/60 bg-panel/40 p-3">
-              <span className="text-lg">{course.flag}</span>
+              <CourseFlag code={course.flag} className="h-4 w-6" />
               <div className="min-w-0 flex-1">
                 <p className={cn("truncate text-sm", scriptClass[course.id])}>{SAMPLES[course.id].text}</p>
                 <p className="truncate text-[11px] text-muted">{SAMPLES[course.id].latin}</p>

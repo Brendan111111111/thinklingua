@@ -27,6 +27,7 @@ import {
 } from "@/lib/progress";
 import { canRecognise, listenOnce, soundsClose, speak, stopSpeaking } from "@/lib/speech";
 import { bestSpeechMatch } from "@/lib/speechScore";
+import { ConceptImage } from "./ConceptImage";
 import { SpeakButton } from "./SpeakButton";
 import { SpeakCard } from "./SpeakCard";
 import { Badge, Icon, ProgressBar, Ring, cn } from "./ui";
@@ -319,7 +320,8 @@ export function LessonRunner({ courseId, lessonId, mode = "lesson", reviewLexeme
             <div className="mt-4 flex flex-wrap justify-center gap-2">
               {result.unlocked.map((id) => (
                 <Badge key={id} tone="jade">
-                  🏆 {id.replace(/-/g, " ")}
+                  <ConceptImage glyph="🏆" renderSize={14} />
+                  {id.replace(/-/g, " ")}
                 </Badge>
               ))}
             </div>
@@ -426,11 +428,12 @@ export function LessonRunner({ courseId, lessonId, mode = "lesson", reviewLexeme
                   key={option.id}
                   type="button"
                   disabled={!answering}
+                  aria-label={option.text}
                   data-state={optionState(option.id)}
                   onClick={() => setChosen(option.id)}
                   className="answer"
                 >
-                  <span className="text-4xl">{option.glyph}</span>
+                  <ConceptImage glyph={option.glyph} renderSize={48} />
                 </button>
               ))}
             </div>
@@ -450,11 +453,12 @@ export function LessonRunner({ courseId, lessonId, mode = "lesson", reviewLexeme
                   key={option.id}
                   type="button"
                   disabled={!answering}
+                  aria-label={option.text}
                   data-state={optionState(option.id)}
                   onClick={() => setChosen(option.id)}
                   className="answer"
                 >
-                  <span className="text-4xl">{option.glyph}</span>
+                  <ConceptImage glyph={option.glyph} renderSize={48} />
                 </button>
               ))}
             </div>
@@ -465,7 +469,7 @@ export function LessonRunner({ courseId, lessonId, mode = "lesson", reviewLexeme
           <div className="anim-slide">
             <Prompt title="Which phrase means this?" hint="Picture first — reach for the word, not the translation." />
             <div className="mt-6 flex flex-col items-center gap-3">
-              <span className="text-6xl">{current.glyph}</span>
+              <ConceptImage glyph={current.glyph} renderSize={80} />
               <SpeakButton text={current.text} locale={course.locale} rate={rate} variant="ghost" size="md" />
             </div>
             <div className="mt-6 grid gap-2.5">
@@ -492,7 +496,7 @@ export function LessonRunner({ courseId, lessonId, mode = "lesson", reviewLexeme
               hint={current.audioOnly ? "Tiles appear after you listen." : "Order the tiles the way the phrase runs."}
             />
             <div className="mt-5 flex flex-col items-center gap-3">
-              <span className="text-5xl">{current.glyph}</span>
+              <ConceptImage glyph={current.glyph} renderSize={64} />
               <SpeakButton text={current.text} locale={course.locale} rate={rate} />
               {!current.audioOnly && <p className={cn("text-center text-2xl font-semibold", targetClass)}>{current.text}</p>}
             </div>
@@ -565,7 +569,7 @@ export function LessonRunner({ courseId, lessonId, mode = "lesson", reviewLexeme
           <div className="anim-slide">
             <Prompt title="Say it out loud. Match the rhythm." hint="Shadow the speaker — same speed, same melody." />
             <div className="mt-6 flex flex-col items-center gap-4">
-              <span className="text-5xl">{current.glyph}</span>
+              <ConceptImage glyph={current.glyph} renderSize={64} />
               <p className={cn("text-center text-3xl font-semibold", targetClass)}>{current.text}</p>
               <SpeakButton text={current.text} locale={course.locale} rate={rate} size="lg" />
             </div>

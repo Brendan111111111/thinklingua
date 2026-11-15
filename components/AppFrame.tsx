@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { courses, getCourse, scriptClass } from "@/lib/content";
 import { HEART_MAX, heartsNow, levelFor, levelProgress, rankFor, setActiveLanguage, useProgress } from "@/lib/progress";
 import { loadEngine, type EngineInfo } from "@/lib/speech";
+import { CourseFlag } from "./CourseFlag";
 import { Icon, ProgressBar, Ring, cn, type IconName } from "./ui";
 
 const NAV: { href: string; label: string; icon: IconName }[] = [
@@ -97,7 +98,7 @@ export function AppFrame({ children }: { children: React.ReactNode }) {
                     : "border-line/70 bg-panel/40 opacity-70 hover:opacity-100",
                 )}
               >
-                {option.flag}
+                <CourseFlag code={option.flag} className="h-3.5 w-5" />
               </button>
             ))}
           </div>

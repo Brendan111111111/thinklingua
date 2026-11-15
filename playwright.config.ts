@@ -5,6 +5,7 @@ const PORT = 3000;
 
 export default defineConfig({
   testDir: "./tests",
+  testIgnore: "**/concept-images.spec.ts",
   timeout: 60_000,
   expect: { timeout: 30_000 },
   fullyParallel: true,

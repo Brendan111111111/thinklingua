@@ -148,6 +148,9 @@ vite.config.ts.timestamp-*
 # Turbo Repo
 .turbo
 
+# local scratch space
+.tmp/
+
 # local env
 .env
 .env.local

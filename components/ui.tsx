@@ -4,6 +4,25 @@ export function cn(...values: Array<string | false | null | undefined>): string 
   return values.filter(Boolean).join(" ");
 }
 
+/**
+ * Keep a component's default height/width from competing with a caller's
+ * Tailwind size utilities. The class order in `cn` does not decide which
+ * utility wins; both are emitted, so the defaults must be omitted entirely.
+ */
+export function withDefaultSize(className: string | undefined, defaultSize: string): string {
+  if (!className) return defaultSize;
+  if (/(?:^|\s)size-/.test(className)) return className;
+
+  const hasHeight = /(?:^|\s)h-/.test(className);
+  const hasWidth = /(?:^|\s)w-/.test(className);
+  if (hasHeight && hasWidth) return className;
+
+  const defaultHeight = defaultSize.match(/(?:^|\s)(h-\S+)/)?.[1] ?? "";
+  const defaultWidth = defaultSize.match(/(?:^|\s)(w-\S+)/)?.[1] ?? "";
+
+  return [hasHeight ? "" : defaultHeight, hasWidth ? "" : defaultWidth, className].filter(Boolean).join(" ");
+}
+
 export type IconName =
   | "book"
   | "review"

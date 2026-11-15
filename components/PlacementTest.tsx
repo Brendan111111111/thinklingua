@@ -6,6 +6,7 @@ import { getCourse, scriptClass } from "@/lib/content";
 import { placementTests } from "@/lib/content/placement";
 import { placeAtIntermediate, useProgress } from "@/lib/progress";
 import { Badge, Icon, ProgressBar, cn } from "./ui";
+import { CourseFlag } from "./CourseFlag";
 
 export function PlacementTest({ courseId }: { courseId: string }) {
   const course = getCourse(courseId);
@@ -103,7 +104,7 @@ export function PlacementTest({ courseId }: { courseId: string }) {
 
       <header className="mt-4">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-2xl">{course.flag}</span>
+          <CourseFlag code={course.flag} className="h-5 w-7" />
           <Badge tone="violet">placement test</Badge>
           {previous ? <Badge tone="jade">previous score {previous.score}/{test.questions.length}</Badge> : null}
         </div>

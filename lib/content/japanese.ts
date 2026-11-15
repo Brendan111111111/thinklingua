@@ -203,7 +203,7 @@ export const japanese: Course = {
   id: "ja",
   name: "日本語",
   english: "Japanese",
-  flag: "🇯🇵",
+  flag: "jp",
   locale: "ja-JP",
   scriptLabel: "ひらがな · カタカナ · 漢字",
   tagline: "日本語で考えて、日本語で話す。",

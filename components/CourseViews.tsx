@@ -18,6 +18,8 @@ import {
 } from "@/lib/content";
 import { levelFor, rankFor, useProgress } from "@/lib/progress";
 import { Badge, Icon, ProgressBar, Ring, cn } from "./ui";
+import { ConceptImage } from "./ConceptImage";
+import { CourseFlag } from "./CourseFlag";
 import { SpeakButton } from "./SpeakButton";
 
 export function CoursePicker() {
@@ -56,7 +58,7 @@ export function CoursePicker() {
               <div className="flex items-start justify-between">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl">{course.flag}</span>
+                    <CourseFlag code={course.flag} className="h-5 w-7" />
                   </div>
                   <h2 className={cn("mt-3 font-display text-2xl font-semibold", scriptClass[course.id])}>{course.name}</h2>
                   <p className="text-sm text-muted">{course.english}</p>
@@ -240,7 +242,7 @@ export function CourseMap({ courseId }: { courseId: string }) {
       <header className="mt-4 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-2xl">{course.flag}</span>
+            <CourseFlag code={course.flag} className="h-5 w-7" />
             <Badge tone={course.primary ? "jade" : "muted"}>{course.primary ? "flagship" : "same method"}</Badge>
             {progress.placement?.[course.id] ? <Badge tone="violet">placed at intermediate</Badge> : null}
           </div>
@@ -453,7 +455,9 @@ export function CourseMap({ courseId }: { courseId: string }) {
                 <section>
                 <div className="mb-3 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className={cn("grid h-11 w-11 place-items-center rounded-2xl border bg-panel/60 text-xl", unitTint.border)}>{unit.glyph}</span>
+                    <span className={cn("grid h-11 w-11 place-items-center rounded-2xl border bg-panel/60", unitTint.border)}>
+                      <ConceptImage glyph={unit.glyph} renderSize={28} label={unit.title} />
+                    </span>
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
                         <h2 className={cn("font-display text-lg font-semibold", scriptClass[course.id])}>{unit.title}</h2>
@@ -546,7 +550,9 @@ export function CourseMap({ courseId }: { courseId: string }) {
                     )}
                   >
                     <div className="flex items-start justify-between">
-                      <span className="grid h-11 w-11 place-items-center rounded-2xl border border-line/70 bg-ink/40 text-xl">{unit.glyph}</span>
+                      <span className="grid h-11 w-11 place-items-center rounded-2xl border border-line/70 bg-ink/40">
+                        <ConceptImage glyph={unit.glyph} renderSize={28} label={unit.title} />
+                      </span>
                       {record ? <Badge tone="jade">best {record.best}%</Badge> : <Badge tone="muted">not yet</Badge>}
                     </div>
                     <p className={cn("mt-3 font-display text-lg font-semibold", scriptClass[course.id])}>{speakingLessonTitle(course, unit, variant)}</p>

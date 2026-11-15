@@ -5,6 +5,8 @@ import { useRef } from "react";
 import { LessonRunner } from "@/components/LessonRunner";
 import { allCourseLessonIds, courses, getCourse, scriptClass } from "@/lib/content";
 import { dueLexemes, useProgress } from "@/lib/progress";
+import { ConceptImage } from "@/components/ConceptImage";
+import { CourseFlag } from "@/components/CourseFlag";
 import { Icon, cn } from "@/components/ui";
 
 export default function ReviewPage() {
@@ -21,7 +23,7 @@ export default function ReviewPage() {
   if (!started) {
     return (
       <div className="card mx-auto max-w-lg p-8 text-center">
-        <span className="text-4xl">👂</span>
+        <ConceptImage glyph="👂" renderSize={40} className="mx-auto" />
         <h1 className="mt-3 font-display text-2xl font-semibold">Nothing to review yet</h1>
         <p className="mt-2 text-sm text-muted">
           Finish a lesson in {course.english} and the words you meet will come back here on a spaced schedule, right before you
@@ -62,7 +64,7 @@ export default function ReviewPage() {
                 option.id === course.id ? "border-jade/50 bg-jade/10" : "border-line/70 bg-panel/40 opacity-70",
               )}
             >
-              {option.flag}
+              <CourseFlag code={option.flag} className="h-4 w-6" />
             </Link>
           ))}
         </div>

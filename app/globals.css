@@ -171,6 +171,12 @@ body {
 .answer[data-state="wrong"] { border-color: rgba(255, 126, 160, 0.9); background: rgba(255, 126, 160, 0.14); }
 .answer[data-state="dim"] { opacity: 0.4; }
 
+/* Keep the 96px choice images at their intended square size on very narrow
+   screens, where the card and grid padding would otherwise squeeze them. */
+@media (max-width: 380px) {
+  .answer { padding-inline: 0.5rem; }
+}
+
 .tile {
   padding: 0.6rem 0.95rem;
   border-radius: 0.9rem;

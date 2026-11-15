@@ -414,7 +414,7 @@ export function LessonRunner({ courseId, lessonId, mode = "lesson", reviewLexeme
         </div>
       )}
 
-      <div className="card p-6 sm:p-8">
+      <div className="card p-4 sm:p-8">
         {current.kind === "recognise" && (
           <div className="anim-slide">
             <Prompt title="Listen, then pick the picture." hint="No English. Let the sound land on the image." />
@@ -422,7 +422,7 @@ export function LessonRunner({ courseId, lessonId, mode = "lesson", reviewLexeme
               <p className={cn("text-center text-4xl font-semibold", targetClass)}>{current.text}</p>
               <SpeakButton text={current.text} locale={course.locale} rate={rate} size="lg" />
             </div>
-            <div className="mt-6 grid grid-cols-2 gap-3">
+            <div className="mt-6 grid grid-cols-2 gap-2 sm:gap-3">
               {current.options.map((option) => (
                 <button
                   key={option.id}
@@ -447,7 +447,7 @@ export function LessonRunner({ courseId, lessonId, mode = "lesson", reviewLexeme
               <SpeakButton text={current.text} locale={course.locale} rate={rate} size="lg" />
               {!answering && <p className={cn("text-center text-3xl font-semibold", targetClass)}>{current.text}</p>}
             </div>
-            <div className="mt-6 grid grid-cols-2 gap-3">
+            <div className="mt-6 grid grid-cols-2 gap-2 sm:gap-3">
               {current.options.map((option) => (
                 <button
                   key={option.id}

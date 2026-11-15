@@ -1,8 +1,28 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
 const DENSITIES = [
-  { scale: 2, mapVariant: 56, lessonVariant: 96 },
-  { scale: 3, mapVariant: 96, lessonVariant: 144 },
+  {
+    scale: 2,
+    mapVariant: 56,
+    mapNaturalWidth: 28,
+    lessonVariant: 192,
+    lessonNaturalWidth: 96,
+    compactVariant: 144,
+    compactNaturalWidth: 72,
+    promptVariant: 240,
+    promptNaturalWidth: 120,
+  },
+  {
+    scale: 3,
+    mapVariant: 96,
+    mapNaturalWidth: 32,
+    lessonVariant: 288,
+    lessonNaturalWidth: 96,
+    compactVariant: 240,
+    compactNaturalWidth: 80,
+    promptVariant: 240,
+    promptNaturalWidth: 120,
+  },
 ] as const;
 
 type ConceptRequestLog = {
@@ -10,9 +30,10 @@ type ConceptRequestLog = {
   violations: string[];
 };
 
-function trackConceptRequests(page: Page, expectedWidth: number): ConceptRequestLog {
+function trackConceptRequests(page: Page, expectedWidths: number | number[]): ConceptRequestLog {
   const log: ConceptRequestLog = { count: 0, violations: [] };
-  const expectedPath = new RegExp(`^/concepts/opt/[a-z0-9-]+-${expectedWidth}\\.webp$`);
+  const widths = Array.isArray(expectedWidths) ? expectedWidths : [expectedWidths];
+  const expectedPath = new RegExp(`^/concepts/opt/[a-z0-9-]+-(?:${widths.join("|")})\\.webp$`);
 
   page.on("request", (request) => {
     const pathname = new URL(request.url()).pathname;
@@ -54,7 +75,30 @@ async function loadAllLazyImages(page: Page, images: Locator) {
     .toBe(true);
 }
 
-async function expectSelectedVariant(images: Locator, width: number, scale: number) {
+async function advanceToImage(page: Page, target: Locator, maxQuestions = 12) {
+  for (let question = 0; question < maxQuestions; question += 1) {
+    if (await target.count()) return;
+
+    const answer = page.locator("button.answer:not([disabled])").first();
+    if (await answer.count()) {
+      await answer.click();
+    } else {
+      const tile = page.locator('button.tile[data-used="false"]').first();
+      if (await tile.count()) await tile.click();
+    }
+
+    const check = page.getByRole("button", { name: "Check", exact: true });
+    await expect(check).toBeEnabled();
+    await check.click();
+
+    const next = page.getByRole("button", { name: "Continue", exact: true });
+    await next.click();
+    await expect(next).toBeHidden();
+  }
+  throw new Error("reached the question cap before the target image appeared");
+}
+
+async function expectSelectedVariant(images: Locator, width: number, naturalWidth: number) {
   const details = await images.evaluateAll((nodes) =>
     nodes.map((node) => {
       const image = node as HTMLImageElement;
@@ -66,7 +110,7 @@ async function expectSelectedVariant(images: Locator, width: number, scale: numb
   const expectedPath = new RegExp(`^/concepts/opt/[a-z0-9-]+-${width}\\.webp$`);
   for (const detail of details) {
     expect(new URL(detail.currentSrc).pathname).toMatch(expectedPath);
-    expect(detail.naturalWidth).toBe(width / scale);
+    expect(detail.naturalWidth).toBe(naturalWidth);
   }
 }
 
@@ -75,7 +119,17 @@ function expectOnlyExpectedRequests(log: ConceptRequestLog) {
   expect(log.count).toBeGreaterThan(0);
 }
 
-for (const { scale, mapVariant, lessonVariant } of DENSITIES) {
+for (const {
+  scale,
+  mapVariant,
+  mapNaturalWidth,
+  lessonVariant,
+  lessonNaturalWidth,
+  compactVariant,
+  compactNaturalWidth,
+  promptVariant,
+  promptNaturalWidth,
+} of DENSITIES) {
   test.describe(`at ${scale}x`, () => {
     test.use({ deviceScaleFactor: scale });
 
@@ -85,17 +139,49 @@ for (const { scale, mapVariant, lessonVariant } of DENSITIES) {
 
       const images = page.locator('img[data-concept][width="28"]');
       await loadAllLazyImages(page, images);
-      await expectSelectedVariant(images, mapVariant, scale);
+      await expectSelectedVariant(images, mapVariant, mapNaturalWidth);
       expectOnlyExpectedRequests(requests);
     });
 
-    test(`lesson serves ${lessonVariant}px variants for 48px choices`, async ({ page }) => {
+    test(`lesson serves ${lessonVariant}px variants for 96px choices`, async ({ page }) => {
       const requests = trackConceptRequests(page, lessonVariant);
       await page.goto("/learn/th/th.u1.l1");
 
-      const images = page.locator('img[data-concept][width="48"]');
+      const images = page.locator('img[data-concept][width="96"]');
       await loadAllLazyImages(page, images);
-      await expectSelectedVariant(images, lessonVariant, scale);
+      await expectSelectedVariant(images, lessonVariant, lessonNaturalWidth);
+      expectOnlyExpectedRequests(requests);
+    });
+
+    test(`lesson serves ${compactVariant}px variants for 64px build images`, async ({ page }) => {
+      const requests = trackConceptRequests(page, [lessonVariant, compactVariant]);
+      await page.goto("/learn/th/th.u1.l1");
+
+      const images = page.locator('img[data-concept][width="64"]');
+      await advanceToImage(page, images);
+      await loadAllLazyImages(page, images);
+      await expectSelectedVariant(images, compactVariant, compactNaturalWidth);
+      expectOnlyExpectedRequests(requests);
+    });
+
+    test(`lesson serves ${promptVariant}px variants for 80px prompt images`, async ({ page }) => {
+      const requests = trackConceptRequests(page, [lessonVariant, compactVariant, promptVariant]);
+      await page.goto("/learn/th/th.u1.l1");
+
+      const images = page.locator('img[data-concept][width="80"]');
+      await advanceToImage(page, images);
+      await loadAllLazyImages(page, images);
+      await expectSelectedVariant(images, promptVariant, promptNaturalWidth);
+      expectOnlyExpectedRequests(requests);
+    });
+
+    test(`speaking serves ${compactVariant}px variants for 64px images`, async ({ page }) => {
+      const requests = trackConceptRequests(page, compactVariant);
+      await page.goto("/learn/th/speak.th.u1");
+
+      const images = page.locator('img[data-concept][width="64"]');
+      await loadAllLazyImages(page, images);
+      await expectSelectedVariant(images, compactVariant, compactNaturalWidth);
       expectOnlyExpectedRequests(requests);
     });
   });

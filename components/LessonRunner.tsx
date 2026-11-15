@@ -433,7 +433,7 @@ export function LessonRunner({ courseId, lessonId, mode = "lesson", reviewLexeme
                   onClick={() => setChosen(option.id)}
                   className="answer"
                 >
-                  <ConceptImage glyph={option.glyph} renderSize={48} />
+                  <ConceptImage glyph={option.glyph} renderSize={96} />
                 </button>
               ))}
             </div>
@@ -458,7 +458,7 @@ export function LessonRunner({ courseId, lessonId, mode = "lesson", reviewLexeme
                   onClick={() => setChosen(option.id)}
                   className="answer"
                 >
-                  <ConceptImage glyph={option.glyph} renderSize={48} />
+                  <ConceptImage glyph={option.glyph} renderSize={96} />
                 </button>
               ))}
             </div>

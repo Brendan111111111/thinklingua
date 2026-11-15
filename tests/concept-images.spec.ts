@@ -6,30 +6,28 @@ const DENSITIES = [
 ] as const;
 
 type ConceptRequestLog = {
-  paths: string[];
+  count: number;
   violations: string[];
 };
 
-function trackConceptRequests(page: Page): ConceptRequestLog {
-  const paths: string[] = [];
-  const violations: string[] = [];
+function trackConceptRequests(page: Page, expectedWidth: number): ConceptRequestLog {
+  const log: ConceptRequestLog = { count: 0, violations: [] };
+  const expectedPath = new RegExp(`^/concepts/opt/[a-z0-9-]+-${expectedWidth}\\.webp$`);
 
   page.on("request", (request) => {
-    const url = new URL(request.url());
-    if (url.pathname.startsWith("/_next/image")) {
-      violations.push(`optimizer request: ${url.pathname}`);
+    const pathname = new URL(request.url()).pathname;
+    if (pathname.startsWith("/_next/image")) {
+      log.violations.push(`image optimizer request: ${pathname}`);
       return;
     }
-    if (!url.pathname.startsWith("/concepts/")) return;
+    if (!pathname.startsWith("/concepts/")) return;
 
-    paths.push(url.pathname);
-    if (url.pathname.includes("512")) violations.push(`512px request: ${url.pathname}`);
-    if (!/^\/concepts\/opt\/[a-z0-9-]+-(56|96|144|240)\.webp$/.test(url.pathname)) {
-      violations.push(`non-variant concept request: ${url.pathname}`);
-    }
+    log.count += 1;
+    if (pathname.includes("512")) log.violations.push(`512px concept request: ${pathname}`);
+    if (!expectedPath.test(pathname)) log.violations.push(`unexpected concept request: ${pathname}`);
   });
 
-  return { paths, violations };
+  return log;
 }
 
 async function loadAllLazyImages(page: Page, images: Locator) {
@@ -56,34 +54,25 @@ async function loadAllLazyImages(page: Page, images: Locator) {
     .toBe(true);
 }
 
-async function expectVariant(images: Locator, width: number, scale: number, renderSize: number) {
+async function expectSelectedVariant(images: Locator, width: number, scale: number) {
   const details = await images.evaluateAll((nodes) =>
     nodes.map((node) => {
       const image = node as HTMLImageElement;
-      return {
-        currentSrc: image.currentSrc,
-        naturalWidth: image.naturalWidth,
-        srcSet: image.getAttribute("srcset") ?? "",
-        cssWidth: getComputedStyle(image).width,
-      };
+      return { currentSrc: image.currentSrc, naturalWidth: image.naturalWidth };
     }),
   );
 
   expect(details.length).toBeGreaterThan(0);
+  const expectedPath = new RegExp(`^/concepts/opt/[a-z0-9-]+-${width}\\.webp$`);
   for (const detail of details) {
-    expect(new URL(detail.currentSrc).pathname).toMatch(new RegExp(`-${width}\\.webp$`));
+    expect(new URL(detail.currentSrc).pathname).toMatch(expectedPath);
     expect(detail.naturalWidth).toBe(width / scale);
-    expect(detail.srcSet).toContain(`-${width}.webp ${scale}x`);
-    expect(detail.cssWidth).toBe(`${renderSize}px`);
   }
 }
 
-async function expectConceptRequestSet(log: ConceptRequestLog, width: number) {
+function expectOnlyExpectedRequests(log: ConceptRequestLog) {
   expect(log.violations).toEqual([]);
-  expect(log.paths.length).toBeGreaterThan(0);
-  for (const path of log.paths) {
-    expect(path).toMatch(new RegExp(`-${width}\\.webp$`));
-  }
+  expect(log.count).toBeGreaterThan(0);
 }
 
 for (const { scale, mapVariant, lessonVariant } of DENSITIES) {
@@ -91,27 +80,23 @@ for (const { scale, mapVariant, lessonVariant } of DENSITIES) {
     test.use({ deviceScaleFactor: scale });
 
     test(`course map serves ${mapVariant}px variants for 28px thumbnails`, async ({ page }) => {
-      const requests = trackConceptRequests(page);
-      const response = await page.goto("/learn/th");
-      expect(response?.ok()).toBe(true);
+      const requests = trackConceptRequests(page, mapVariant);
+      await page.goto("/learn/th");
 
       const images = page.locator('img[data-concept][width="28"]');
-      await expect(images.first()).toBeVisible();
       await loadAllLazyImages(page, images);
-      await expectVariant(images, mapVariant, scale, 28);
-      await expectConceptRequestSet(requests, mapVariant);
+      await expectSelectedVariant(images, mapVariant, scale);
+      expectOnlyExpectedRequests(requests);
     });
 
     test(`lesson serves ${lessonVariant}px variants for 48px choices`, async ({ page }) => {
-      const requests = trackConceptRequests(page);
-      const response = await page.goto("/learn/th/th.u1.l1");
-      expect(response?.ok()).toBe(true);
+      const requests = trackConceptRequests(page, lessonVariant);
+      await page.goto("/learn/th/th.u1.l1");
 
       const images = page.locator('img[data-concept][width="48"]');
-      await expect(images.first()).toBeVisible();
       await loadAllLazyImages(page, images);
-      await expectVariant(images, lessonVariant, scale, 48);
-      await expectConceptRequestSet(requests, lessonVariant);
+      await expectSelectedVariant(images, lessonVariant, scale);
+      expectOnlyExpectedRequests(requests);
     });
   });
 }

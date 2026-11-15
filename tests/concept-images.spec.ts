@@ -1,8 +1,8 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
 const DENSITIES = [
-  { scale: 2, mapVariant: 56, lessonVariant: 96 },
-  { scale: 3, mapVariant: 96, lessonVariant: 144 },
+  { scale: 2, mapVariant: 56, mapNaturalWidth: 28, lessonVariant: 192, lessonNaturalWidth: 96 },
+  { scale: 3, mapVariant: 96, mapNaturalWidth: 32, lessonVariant: 288, lessonNaturalWidth: 96 },
 ] as const;
 
 type ConceptRequestLog = {
@@ -54,7 +54,7 @@ async function loadAllLazyImages(page: Page, images: Locator) {
     .toBe(true);
 }
 
-async function expectSelectedVariant(images: Locator, width: number, scale: number) {
+async function expectSelectedVariant(images: Locator, width: number, naturalWidth: number) {
   const details = await images.evaluateAll((nodes) =>
     nodes.map((node) => {
       const image = node as HTMLImageElement;
@@ -66,7 +66,7 @@ async function expectSelectedVariant(images: Locator, width: number, scale: numb
   const expectedPath = new RegExp(`^/concepts/opt/[a-z0-9-]+-${width}\\.webp$`);
   for (const detail of details) {
     expect(new URL(detail.currentSrc).pathname).toMatch(expectedPath);
-    expect(detail.naturalWidth).toBe(width / scale);
+    expect(detail.naturalWidth).toBe(naturalWidth);
   }
 }
 
@@ -75,7 +75,7 @@ function expectOnlyExpectedRequests(log: ConceptRequestLog) {
   expect(log.count).toBeGreaterThan(0);
 }
 
-for (const { scale, mapVariant, lessonVariant } of DENSITIES) {
+for (const { scale, mapVariant, mapNaturalWidth, lessonVariant, lessonNaturalWidth } of DENSITIES) {
   test.describe(`at ${scale}x`, () => {
     test.use({ deviceScaleFactor: scale });
 
@@ -85,17 +85,17 @@ for (const { scale, mapVariant, lessonVariant } of DENSITIES) {
 
       const images = page.locator('img[data-concept][width="28"]');
       await loadAllLazyImages(page, images);
-      await expectSelectedVariant(images, mapVariant, scale);
+      await expectSelectedVariant(images, mapVariant, mapNaturalWidth);
       expectOnlyExpectedRequests(requests);
     });
 
-    test(`lesson serves ${lessonVariant}px variants for 48px choices`, async ({ page }) => {
+    test(`lesson serves ${lessonVariant}px variants for 96px choices`, async ({ page }) => {
       const requests = trackConceptRequests(page, lessonVariant);
       await page.goto("/learn/th/th.u1.l1");
 
-      const images = page.locator('img[data-concept][width="48"]');
+      const images = page.locator('img[data-concept][width="96"]');
       await loadAllLazyImages(page, images);
-      await expectSelectedVariant(images, lessonVariant, scale);
+      await expectSelectedVariant(images, lessonVariant, lessonNaturalWidth);
       expectOnlyExpectedRequests(requests);
     });
   });

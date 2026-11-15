@@ -6,6 +6,7 @@ import type { LangId } from "@/lib/content/types";
 import { levelFor, noteChat, saveSettings, useProgress } from "@/lib/progress";
 import { personaFor } from "@/lib/tutor";
 import { canRecognise, listenOnce, speak, stopSpeaking } from "@/lib/speech";
+import { CourseFlag } from "./CourseFlag";
 import { SpeakButton } from "./SpeakButton";
 import { Badge, Icon, cn } from "./ui";
 
@@ -243,7 +244,7 @@ export function TutorChat() {
               option.id === lang ? "border-jade/50 bg-jade/10 text-cream" : "border-line/70 bg-panel/40 text-muted hover:text-cream",
             )}
           >
-            <span>{option.flag}</span>
+            <CourseFlag code={option.flag} />
             <span className={scriptClass[option.id]}>{option.name}</span>
           </button>
         ))}

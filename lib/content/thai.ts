@@ -77,7 +77,7 @@ const lexemeList: Lexeme[] = [
   L("th.klai", "🛣️", "ไกล", "klai", "far"),
   L("th.klainear", "📍", "ใกล้", "klai", "near"),
   L("th.yuu", "📌", "อยู่", "yuu", "to be at, to live"),
-  L("th.nang", "🪑", "นั่ง", "nang", "to sit, to ride (a vehicle)"),
+  L("th.nang", "sit", "นั่ง", "nang", "to sit, to ride (a vehicle)"),
   L("th.khue", "🟰", "คือ", "khue", "is (namely)"),
   L("th.nii", "👉", "นี่", "nii", "this"),
 
@@ -207,7 +207,7 @@ export const thai: Course = {
   id: "th",
   name: "ไทย",
   english: "Thai",
-  flag: "🇹🇭",
+  flag: "th",
   locale: "th-TH",
   scriptLabel: "อักษรไทย · Thai script",
   tagline: "ฟังให้ออก พูดให้เป็น คิดเป็นภาษาไทย",

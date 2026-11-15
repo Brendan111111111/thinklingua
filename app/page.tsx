@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { courses, getCourse, scriptClass } from "@/lib/content";
+import { ConceptImage } from "@/components/ConceptImage";
+import { CourseFlag } from "@/components/CourseFlag";
 import { SpeakButton } from "@/components/SpeakButton";
 import { Badge, Icon, cn } from "@/components/ui";
 
@@ -26,7 +28,7 @@ function ConceptCard({
   return (
     <div className="card-soft p-5">
       <div className="flex items-start justify-between">
-        <span className="text-3xl">{glyph}</span>
+        <ConceptImage glyph={glyph} renderSize={36} className="text-gold" />
         <SpeakButton text={word} locale={locale} size="md" />
       </div>
       <p className={cn("mt-4 text-2xl font-semibold", script)}>{word}</p>
@@ -117,7 +119,9 @@ export default function LandingPage() {
               <p className="text-[11px] uppercase tracking-[0.2em] text-jade">What a lesson feels like</p>
               <div className="mt-5 space-y-4">
                 <div className="flex items-center gap-4">
-                  <span className="grid h-14 w-14 place-items-center rounded-2xl border border-line/70 bg-ink/40 text-3xl">🐟</span>
+                  <span className="grid h-14 w-14 place-items-center rounded-2xl border border-line/70 bg-ink/40">
+                    <ConceptImage glyph="🐟" renderSize={36} className="text-gold" />
+                  </span>
                   <div className="flex-1">
                     <p className="text-xs uppercase tracking-wide text-muted">concept</p>
                     <p className="text-sm text-cream">a fish, not the word &ldquo;fish&rdquo;</p>
@@ -148,7 +152,10 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="absolute -bottom-6 -right-4 hidden rotate-2 rounded-2xl border border-gold/30 bg-gold/10 px-4 py-2 text-xs text-gold shadow-lg sm:block">
-              🔥 no-English multiplier ×1.4
+              <span className="inline-flex items-center gap-1">
+                <ConceptImage glyph="🔥" renderSize={16} className="text-gold" />
+                no-English multiplier ×1.4
+              </span>
             </div>
           </div>
         </section>
@@ -245,7 +252,7 @@ export default function LandingPage() {
             { glyph: "🎚️", title: "Ear badges", body: "Tone and mora wins are their own trophy shelf." },
           ].map((item) => (
             <div key={item.title} className="card p-5">
-              <span className="text-2xl">{item.glyph}</span>
+              <ConceptImage glyph={item.glyph} renderSize={28} className="text-jade" label={item.title} />
               <h3 className="mt-3 font-display text-base font-semibold">{item.title}</h3>
               <p className="mt-1 text-sm text-muted">{item.body}</p>
             </div>
@@ -268,7 +275,7 @@ export default function LandingPage() {
             {courses.map((course) => (
               <Link key={course.id} href={`/learn/${course.id}`} className="card group p-5 transition hover:-translate-y-0.5 hover:border-jade/40">
                 <div className="flex items-center gap-2">
-                  <span className="text-xl">{course.flag}</span>
+                  <CourseFlag code={course.flag} className="h-4 w-6" />
                   <span className={cn("font-display text-lg font-semibold", scriptClass[course.id])}>{course.name}</span>
                 </div>
                 <p className={cn("mt-2 text-sm text-cream/80", scriptClass[course.id])}>{course.tagline}</p>

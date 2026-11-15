@@ -7,6 +7,7 @@ import { canRecognise, listenOnce, stopSpeaking } from "@/lib/speech";
 import { analyseAttempt, pitchSupported, referenceContour } from "@/lib/pitchClient";
 import { toneFeedback, type SyllableTone } from "@/lib/thaiTones";
 import { Icon, cn } from "./ui";
+import { ConceptImage } from "./ConceptImage";
 import { SpeakButton } from "./SpeakButton";
 
 type Props = {
@@ -291,7 +292,7 @@ export function SpeakCard({ text, reading, latin, gloss, glyph, tone, locale, ra
       </div>
 
       <div className="mt-6 flex flex-col items-center gap-3 text-center">
-        <span className="text-5xl">{glyph}</span>
+        <ConceptImage glyph={glyph} renderSize={64} />
         <p className={cn("text-3xl font-semibold", locale.startsWith("th") ? "script-th" : locale.startsWith("ja") ? "script-ja" : locale.startsWith("ru") ? "script-ru" : "")}>
           {text}
         </p>

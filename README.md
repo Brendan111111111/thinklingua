@@ -181,12 +181,71 @@ from the exercise key, so a lesson looks the same on every device.
 
 ## Deploy
 
-The app is plain Next.js App Router with two route handlers, so any Node host works (Vercel, Fly, a container). Set the same
-environment variables in the host's secret store — never in the repo. `GEMINI_API_KEY`, `OPENAI_API_KEY`, `AZURE_SPEECH_KEY` and the other voice
-keys are read only on the server.
+Production is a Cloudflare Worker built with OpenNext and deployed with Wrangler.
 
-If you deploy to an edge/Workers runtime, confirm that `app/api/tts/route.ts` and `app/api/tutor/route.ts` work under that
-runtime's `fetch` semantics; the handlers use `fetch`, `Blob` and `ReadableStream` only.
+### Prerequisites
+
+- Node.js and npm; run `npm install` from a fresh checkout.
+- Cloudflare auth with Workers edit access: `npx wrangler login` (or set `CLOUDFLARE_API_TOKEN` in CI).
+- The `thinklingua-inc-cache` R2 bucket and the bindings in `wrangler.jsonc` must exist.
+- Set production secrets once with `npx wrangler secret put GEMINI_API_KEY` (and any other voice or tutor keys). They persist across deploys.
+
+### Build and deploy
+
+From a clean, merged `main`:
+
+```bash
+git switch main
+git pull --ff-only
+git rev-parse HEAD             # record the release commit
+npm run build:worker           # Next.js production build + OpenNext Worker bundle
+npx wrangler deploy --name thinklingua
+```
+
+`npm run build:worker` writes `.open-next/worker.js` and the static assets. `npx wrangler deploy` detects the OpenNext project, uploads the Worker and assets, and prints the **Current Version ID** and the live URL.
+
+**Live URL:** https://thinklingua.brendan-6bc.workers.dev
+
+For reference, the 2026-11-15 production release was built from commit `8f8e534a30112cc9eb5a98d80b23169788eafaa5` and deployed as version `39c2f338-68a2-4e6e-8e9c-309857a634d6`.
+
+### Verify the release
+
+1. Confirm the live lesson responds:
+
+   ```bash
+   curl -fsS -o /dev/null -w '%{http_code} %{content_type}\n' \
+     https://thinklingua.brendan-6bc.workers.dev/learn/ja/ja.u3.l1
+   # 200 text/html; charset=utf-8
+   ```
+
+2. Confirm production is serving the version printed by the deploy at 100%:
+
+   ```bash
+   npx wrangler deployments status --name thinklingua
+   ```
+
+   `Version(s): (100%) <version-id>` must match the deploy output.
+
+3. Inspect recent versions, or a specific version when the active one is unexpected:
+
+   ```bash
+   npx wrangler versions list --name thinklingua
+   npx wrangler versions view <version-id> --name thinklingua
+   ```
+
+   `versions view` also confirms the compatibility date, handlers, bindings and configured secret names without exposing secret values.
+
+4. Confirm the lesson's 2x and 3x assets are present:
+
+   ```bash
+   curl -fsS -o /dev/null -w '%{http_code} %{content_type}\n' \
+     https://thinklingua.brendan-6bc.workers.dev/concepts/opt/house-192.webp
+   curl -fsS -o /dev/null -w '%{http_code} %{content_type}\n' \
+     https://thinklingua.brendan-6bc.workers.dev/concepts/opt/house-288.webp
+   # 200 image/webp for both
+   ```
+
+Other Node hosts can still run `npm run build && npm start`; set the same server-side secrets in that host.
 
 ## Design notes
 

@@ -5,8 +5,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:worker": "opennextjs-cloudflare build",
     "start": "next start",
-    "test:tone": "playwright test"
+    "test:tone": "playwright test",
+    "test:concept-images": "playwright test --config playwright.worker.config.ts"
   },
   "dependencies": {
     "next": "16.4.5",

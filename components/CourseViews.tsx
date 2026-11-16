@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   allCourseLessonIds,
@@ -146,11 +147,24 @@ function MilestoneMarker({ complete, detail, label = "Intermediate milestone" }:
 export function CourseMap({ courseId, initialTrack = "words" }: { courseId: string; initialTrack?: Track }) {
   const course = getCourse(courseId);
   const { progress } = useProgress();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [track, setTrack] = useState<Track>(initialTrack);
 
   useEffect(() => {
     setTrack(initialTrack);
   }, [initialTrack]);
+
+  function selectTrack(nextTrack: Track) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("track", nextTrack);
+    const query = params.toString();
+    if (query === searchParams.toString()) return;
+
+    setTrack(nextTrack);
+    router.replace(`${pathname}?${query}`, { scroll: false });
+  }
 
   if (!course) {
     return (
@@ -391,7 +405,7 @@ export function CourseMap({ courseId, initialTrack = "words" }: { courseId: stri
             <button
               key={option.id}
               type="button"
-              onClick={() => setTrack(option.id)}
+              onClick={() => selectTrack(option.id)}
               aria-pressed={active}
               className={cn(
                 "rounded-2xl border px-4 py-3 text-left transition",

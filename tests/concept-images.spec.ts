@@ -1,4 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { CONCEPT_PHOTOS } from "../components/conceptPhotos";
+import { glyphOptions } from "../lib/exercises";
+import type { Course, Lexeme } from "../lib/content/types";
 
 const DENSITIES = [
   {
@@ -186,3 +189,41 @@ for (const {
     });
   });
 }
+
+test("answer choices use distinct concept images", async ({ page }) => {
+  await page.goto("/learn/ja/ja.u3.l2");
+  await page.locator("button.answer").first().click();
+  await page.getByRole("button", { name: "Check", exact: true }).click();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+
+  const images = page.locator("button.answer img[data-concept]");
+  await expect(images).toHaveCount(4);
+  const sources = await images.evaluateAll((nodes) =>
+    nodes.map((node) => new URL((node as HTMLImageElement).currentSrc).pathname),
+  );
+  expect(new Set(sources).size).toBe(sources.length);
+});
+
+function testLexeme(id: string, glyph: string): Lexeme {
+  return { id, glyph, text: id, latin: id, gloss: id };
+}
+
+test("options deduplicate different glyphs that share a photo", () => {
+  const target = testLexeme("time", "⌛");
+  const lexemes = [
+    target,
+    testLexeme("not-yet", "⏳"), // Same /concepts/time.jpeg source as ⌛
+    testLexeme("walk", "🚶"),
+    testLexeme("train", "🚆"),
+  ];
+  const course = {
+    lexemes: Object.fromEntries(lexemes.map((lexeme) => [lexeme.id, lexeme])),
+  } as Course;
+
+  const options = glyphOptions(course, target, "test:shared-photo");
+  const sources = options.map((option) => CONCEPT_PHOTOS[option.glyph]?.src ?? option.glyph);
+
+  expect(options).toHaveLength(3);
+  expect(options.map((option) => option.glyph)).not.toContain("⏳");
+  expect(new Set(sources).size).toBe(sources.length);
+});

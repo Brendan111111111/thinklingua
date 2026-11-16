@@ -1,4 +1,5 @@
 import type { Course, EarDrill, Lesson, Lexeme, Phrase, ReadingLesson, ReadingSymbol, Unit } from "./content/types";
+import { CONCEPT_PHOTOS, FALLBACK_CONCEPT_PHOTO } from "../components/conceptPhotos";
 
 export type GlyphOption = { id: string; glyph: string; text: string };
 
@@ -128,9 +129,23 @@ function shuffle<T>(items: T[], random: () => number): T[] {
 }
 
 /* ── option builders ───────────────────────────────────────────────────── */
-function glyphOptions(course: Course, target: Lexeme, key: string, pool?: Lexeme[]): GlyphOption[] {
+function conceptPhotoSource(glyph: string): string {
+  return (CONCEPT_PHOTOS[glyph] ?? FALLBACK_CONCEPT_PHOTO).src;
+}
+
+export function glyphOptions(course: Course, target: Lexeme, key: string, pool?: Lexeme[]): GlyphOption[] {
   const source = pool ?? Object.values(course.lexemes);
-  const sameSet = source.filter((item) => item.id !== target.id && item.glyph !== target.glyph);
+  // Different glyphs can share a photo. Deduplicate by the actual image source
+  // so two visually identical choices can never appear in the same question.
+  const targetSource = conceptPhotoSource(target.glyph);
+  const usedSources = new Set<string>();
+  const sameSet = source.filter((item) => {
+    if (item.id === target.id) return false;
+    const itemSource = conceptPhotoSource(item.glyph);
+    if (itemSource === targetSource || usedSources.has(itemSource)) return false;
+    usedSources.add(itemSource);
+    return true;
+  });
   const random = rng(hash(key));
   const distractors = shuffle(sameSet, random).slice(0, 3);
   const ordered = shuffle([target, ...distractors], random);

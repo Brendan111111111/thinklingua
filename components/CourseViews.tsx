@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   allCourseLessonIds,
   courses,
@@ -143,10 +143,14 @@ function MilestoneMarker({ complete, detail, label = "Intermediate milestone" }:
   );
 }
 
-export function CourseMap({ courseId }: { courseId: string }) {
+export function CourseMap({ courseId, initialTrack = "words" }: { courseId: string; initialTrack?: Track }) {
   const course = getCourse(courseId);
   const { progress } = useProgress();
-  const [track, setTrack] = useState<Track>("words");
+  const [track, setTrack] = useState<Track>(initialTrack);
+
+  useEffect(() => {
+    setTrack(initialTrack);
+  }, [initialTrack]);
 
   if (!course) {
     return (

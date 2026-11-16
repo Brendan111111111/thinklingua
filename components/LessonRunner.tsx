@@ -44,13 +44,21 @@ export function LessonRunner({ courseId, lessonId, mode = "lesson", reviewLexeme
     [course, progress.completed],
   );
   const speakingVariant = lessonId?.startsWith("speak.") ? speakingVariantFor(lessonId) : 0;
-  const previousLessonId = useMemo(() => {
-    if (!course || !lessonId || mode === "review") return null;
-    const track = lessonId.startsWith("read.") ? "read" : lessonId.startsWith("speak.") ? "speak" : "words";
-    const ids = trackLessonIds(course, track);
+  const currentTrack = useMemo<"words" | "speak" | "read" | null>(() => {
+    if (!lessonId || mode === "review") return null;
+    if (lessonId.startsWith("read.")) return "read";
+    if (lessonId.startsWith("speak.")) return "speak";
+    return "words";
+  }, [lessonId, mode]);
+  const { previousLessonId, nextLessonId } = useMemo(() => {
+    if (!course || !lessonId || !currentTrack) return { previousLessonId: null, nextLessonId: null };
+    const ids = trackLessonIds(course, currentTrack);
     const at = ids.indexOf(lessonId);
-    return at > 0 ? ids[at - 1] : null;
-  }, [course, lessonId, mode]);
+    return {
+      previousLessonId: at > 0 ? ids[at - 1] : null,
+      nextLessonId: at >= 0 && at < ids.length - 1 ? ids[at + 1] : null,
+    };
+  }, [course, lessonId, currentTrack]);
   const exercises = useMemo(() => {
     const currentCourse = getCourse(courseId);
     if (!currentCourse) return [];
@@ -270,6 +278,7 @@ export function LessonRunner({ courseId, lessonId, mode = "lesson", reviewLexeme
 
   if (result) {
     const percent = Math.round((score / Math.max(1, total)) * 100);
+    const mapHref = `/learn/${course.id}${currentTrack ? `?track=${currentTrack}` : ""}`;
     return (
       <div className="relative mx-auto max-w-xl">
         {confetti &&
@@ -330,21 +339,34 @@ export function LessonRunner({ courseId, lessonId, mode = "lesson", reviewLexeme
           {result.levelUp && <p className="mt-4 text-sm text-gold">New level — your rank just moved up.</p>}
 
           <div className="mt-7 flex flex-col gap-2 sm:flex-row">
-            <Link href={`/learn/${course.id}`} className="btn btn-primary flex-1 px-5 py-3.5">
+            <Link href={mapHref} className="btn btn-primary flex-1 px-5 py-3.5">
               Back to the map
             </Link>
             <Link href="/tutor" className="btn btn-ghost flex-1 px-5 py-3.5">
               Talk to a native
             </Link>
           </div>
-          {previousLessonId && (
-            <Link
-              href={`/learn/${course.id}/${previousLessonId}`}
-              className="mt-3 inline-flex items-center justify-center gap-1.5 text-xs text-muted transition hover:text-cream"
-            >
-              <Icon name="arrow" className="h-3.5 w-3.5 rotate-180" />
-              Previous lesson
-            </Link>
+          {(previousLessonId || nextLessonId) && (
+            <div className="mt-3 flex items-center justify-center gap-6">
+              {previousLessonId && (
+                <Link
+                  href={`/learn/${course.id}/${previousLessonId}`}
+                  className="inline-flex items-center gap-1.5 text-xs text-muted transition hover:text-cream"
+                >
+                  <Icon name="arrow" className="h-3.5 w-3.5 rotate-180" />
+                  Previous lesson
+                </Link>
+              )}
+              {nextLessonId && (
+                <Link
+                  href={`/learn/${course.id}/${nextLessonId}`}
+                  className="inline-flex items-center gap-1.5 text-xs text-jade transition hover:text-cream"
+                >
+                  Next lesson
+                  <Icon name="arrow" className="h-3.5 w-3.5" />
+                </Link>
+              )}
+            </div>
           )}
         </div>
       </div>

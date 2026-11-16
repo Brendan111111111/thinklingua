@@ -12,7 +12,7 @@
     "test:concept-images": "playwright test --config playwright.worker.config.ts"
   },
   "dependencies": {
-    "next": "16.4.5",
+    "next": "16.4.6",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   },

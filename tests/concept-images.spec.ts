@@ -20,7 +20,7 @@ const DENSITIES = [
     lessonNaturalWidth: 96,
     compactVariant: 240,
     compactNaturalWidth: 80,
-    promptVariant: 240,
+    promptVariant: 360,
     promptNaturalWidth: 120,
   },
 ] as const;
@@ -164,11 +164,11 @@ for (const {
       expectOnlyExpectedRequests(requests);
     });
 
-    test(`lesson serves ${promptVariant}px variants for 80px prompt images`, async ({ page }) => {
+    test(`lesson serves ${promptVariant}px variants for 120px prompt images`, async ({ page }) => {
       const requests = trackConceptRequests(page, [lessonVariant, compactVariant, promptVariant]);
       await page.goto("/learn/th/th.u1.l1");
 
-      const images = page.locator('img[data-concept][width="80"]');
+      const images = page.locator('img[data-concept][width="120"]');
       await advanceToImage(page, images);
       await loadAllLazyImages(page, images);
       await expectSelectedVariant(images, promptVariant, promptNaturalWidth);

@@ -1,9 +1,9 @@
 import { CONCEPT_PHOTOS, FALLBACK_CONCEPT_PHOTO } from "./conceptPhotos";
 import { cn } from "./ui";
 
-// Preserve the original variant ladder for the larger prompt, build and
-// speaking images. Only the 96px answer choices use the new density variants.
-const VARIANT_WIDTHS = [56, 96, 144, 240] as const;
+// Build, speaking and map images use this ladder. The 120px read prompt
+// needs the 360px rung to stay sharp on 3x screens.
+const VARIANT_WIDTHS = [56, 96, 144, 240, 360] as const;
 const ANSWER_CHOICE_VARIANT_WIDTHS = [192, 288] as const;
 
 function variantFor(src: string, requestedWidth: number, widths: readonly number[]): string {

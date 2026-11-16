@@ -469,7 +469,7 @@ export function LessonRunner({ courseId, lessonId, mode = "lesson", reviewLexeme
           <div className="anim-slide">
             <Prompt title="Which phrase means this?" hint="Picture first — reach for the word, not the translation." />
             <div className="mt-6 flex flex-col items-center gap-3">
-              <ConceptImage glyph={current.glyph} renderSize={80} />
+              <ConceptImage glyph={current.glyph} renderSize={120} />
               <SpeakButton text={current.text} locale={course.locale} rate={rate} variant="ghost" size="md" />
             </div>
             <div className="mt-6 grid gap-2.5">

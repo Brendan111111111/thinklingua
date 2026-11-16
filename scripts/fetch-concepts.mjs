@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { generateConceptVariants } from "./concept-variants.mjs";
 
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125 Safari/537.36";
@@ -259,4 +260,7 @@ const creditLines = [
 ];
 fs.writeFileSync(creditsPath, creditLines.join("\n"));
 
-console.log(`\nWrote ${fetched.size} photos, ${componentPath}, ${creditsPath}`);
+const variants = await generateConceptVariants();
+console.log(
+  `\nWrote ${fetched.size} photos, ${componentPath}, ${creditsPath}; generated ${variants.generated} concept variants.`,
+);

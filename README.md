@@ -179,6 +179,17 @@ L("th.plaa", "🐟", "ปลา", "plaa", "fish");       // glyph, script, roman
 The exercise engine (`lib/exercises.ts`) derives a 12–18 drill lesson from that content deterministically — option order is hashed
 from the exercise key, so a lesson looks the same on every device.
 
+Concept photos live in `public/concepts`. Generate every responsive WebP variant — including the 360px source used by 120px prompts
+on 3x screens — after adding or replacing a photo:
+
+```bash
+npm run generate:concept-variants
+```
+
+`scripts/fetch-concepts.mjs` runs the same generator automatically after downloading new photos. The generator hashes each
+source photo and refreshes all of its variants when the source changes, so replacing a photo cannot leave stale variants.
+Unchanged photos are skipped. Use `npm run generate:concept-variants -- --force` to rebuild every variant regardless.
+
 ## Deploy
 
 Production is a Cloudflare Worker built with OpenNext and deployed with Wrangler.

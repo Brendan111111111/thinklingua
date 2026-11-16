@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "build:worker": "opennextjs-cloudflare build",
+    "generate:concept-variants": "node scripts/build-concept-variants.mjs",
     "start": "next start",
     "test:tone": "playwright test",
     "test:concept-images": "playwright test --config playwright.worker.config.ts"
@@ -22,6 +23,7 @@
     "@types/node": "^26.6.6",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "sharp": "0.35.5",
     "tailwindcss": "4.3.5",
     "typescript": "^7.0.2",
     "wrangler": "4.148.0"
